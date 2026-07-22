@@ -1,6 +1,9 @@
 import React, { lazy, Suspense } from "react";
 import { Spinner } from "react-bootstrap";
 import ReactDOM from "react-dom/client";
+import { captureAuthTokenFromUrl } from "./Infraestructure/AuthBootstrap";
+
+captureAuthTokenFromUrl();
 
 const App = lazy(() => import("./App"));
 

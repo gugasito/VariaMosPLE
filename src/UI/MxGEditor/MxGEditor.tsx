@@ -1799,6 +1799,8 @@ export default class MxGEditor extends Component<Props, State> {
               }
             }
             me.createOverlays(element, parentCell);
+            me.props.projectService.raiseEventUpdatedElement(me.currentModel, element);
+            me.props.projectService.saveProject();
           } catch (error) { }
         });
 

@@ -1,9 +1,11 @@
 import React, { Component } from "react";
 import { Model } from "../../Domain/ProductLineEngineering/Entities/Model";
+import ProjectService from "../../Application/Project/ProjectService";
  
 
 interface Props { 
-  model: Model
+  model: Model;
+  projectService?: ProjectService;
 }
 
 interface State {  
@@ -18,6 +20,8 @@ export default class ModelInformationEditor extends Component<Props, State> {
   }   
 
   render() {
+    const isDsplMapping = this.props.model.type === "DSPL Deployment Mapping v1";
+    const featureModels = this.props.projectService?.getProductLineSelected()?.domainEngineering?.models.filter((candidate) => candidate.elements.some((element) => element.properties?.some((property) => property.name === "Selected"))) || [];
     return (
       <div className=""> 
           <div className="row">
@@ -71,6 +75,25 @@ export default class ModelInformationEditor extends Component<Props, State> {
                     />
                   </div>
                 </div>
+                <div>
+                  <div>
+                    <label>{isDsplMapping ? "Modelo de features fuente" : "Source model IDs"}</label>
+                    {isDsplMapping ? <select className="form-control" value={(this.props.model.sourceModelIds || [])[0] || ""} onChange={this.selectSourceFeatureModel}>
+                      <option value="">Selecciona un modelo de features</option>
+                      {featureModels.map((featureModel) => <option key={featureModel.id} value={featureModel.id}>{featureModel.name} ({featureModel.id})</option>)}
+                    </select> : <input
+                      type="text"
+                      className="form-control"
+                      placeholder="id-del-modelo-feature"
+                      id="inputSourceModelIds"
+                      value={(this.props.model.sourceModelIds || []).join(", ")}
+                      onChange={this.inputSourceModelIds_onChange}
+                    />}
+                    <small className="form-text text-muted">
+                      {isDsplMapping ? "El mapping DSPL queda asociado a exactamente un modelo de features." : "IDs separados por coma."}
+                    </small>
+                  </div>
+                </div>
               </div>
       </div>
     );
@@ -94,6 +117,19 @@ export default class ModelInformationEditor extends Component<Props, State> {
   inputSource_onChange=(e)=>{
      this.props.model.source=e.target.value;
      this.forceUpdate();
+  }
+
+  inputSourceModelIds_onChange=(e)=>{
+     this.props.model.sourceModelIds = e.target.value
+       .split(",")
+       .map((value: string) => value.trim())
+       .filter(Boolean);
+     this.forceUpdate();
+  }
+
+  selectSourceFeatureModel=(e)=>{
+    this.props.model.sourceModelIds = e.target.value ? [e.target.value] : [];
+    this.forceUpdate();
   }
 
 } 

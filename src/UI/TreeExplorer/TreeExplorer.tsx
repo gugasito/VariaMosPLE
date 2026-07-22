@@ -1,4 +1,4 @@
-import { Component } from "react";
+import { Component, ReactNode } from "react";
 import { Nav, Tab } from "react-bootstrap";
 import Editor from "react-simple-code-editor";
 import ProjectService from "../../Application/Project/ProjectService";
@@ -24,6 +24,8 @@ import { highlight, languages } from "prismjs";
 
 interface Props {
   projectService: ProjectService;
+  /** Controles de contexto entregados por el workspace, visibles al final del árbol. */
+  footer?: ReactNode;
 }
 
 interface State {
@@ -1006,6 +1008,21 @@ class TreeExplorer extends Component<Props, State> {
     return this.renderModelFolders(folders);
   }
 
+  renderApplicationEngineeringModels(models: Model[], idProductLine: number) {
+    const folders = [];
+    for (let idModel = 0; idModel < models.length; idModel++) {
+      const model = models[idModel];
+      const type = "" + (model.type || model.name);
+      if (!folders[type]) folders[type] = [];
+      folders[type].push(
+        <TreeItem key={model.id} icon="/images/treeView/model.png" label={model.name}
+          onClick={() => this.btn_viewApplicationEngModel(idProductLine, idModel)}
+          onAuxClick={() => this.btn_viewApplicationEngModel(idProductLine, idModel)} />
+      );
+    }
+    return this.renderModelFolders(folders);
+  }
+
   renderScopeModels(models: Model[], idProductLine: number) {
     let folders = [];
     for (let idModel = 0; idModel < models.length; idModel++) {
@@ -1147,7 +1164,7 @@ class TreeExplorer extends Component<Props, State> {
 
   renderApplicationEngineering(productLine: ProductLine, idProductLine: number) {
     let treeItems = [];
-    // treeItems.push(this.renderApplicationEngineeringModels(productLine.applicationEngineering.models, idProductLine))
+    treeItems.push(this.renderApplicationEngineeringModels(productLine.applicationEngineering.models, idProductLine))
     let treeApplications = [];
     for (let idApplication = 0; idApplication < productLine.applicationEngineering.applications.length; idApplication++) {
       const application = productLine.applicationEngineering.applications[idApplication];
@@ -1423,6 +1440,8 @@ class TreeExplorer extends Component<Props, State> {
         {!shouldBlockTree && (
           <CollaborationPanel projectService={this.props.projectService} />
         )}
+
+        {!shouldBlockTree && this.props.footer}
 
         {/* {this.state.showScopeModal && (
           <ScopeModal

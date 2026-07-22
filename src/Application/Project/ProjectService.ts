@@ -455,7 +455,12 @@ export default class ProjectService {
   }
 
   removeUpdatedElementListener(listener: any) {
-    this.updatedElementListeners[listener] = null;
+    const index = typeof listener === "number"
+      ? listener
+      : this.updatedElementListeners.indexOf(listener);
+    if (index >= 0 && index < this.updatedElementListeners.length) {
+      this.updatedElementListeners[index] = null;
+    }
   }
 
   raiseEventUpdatedElement(
@@ -466,7 +471,7 @@ export default class ProjectService {
     let e = new UpdatedElementEventArg(me, model, element);
     for (let index = 0; index < me.updatedElementListeners.length; index++) {
       let callback = this.updatedElementListeners[index];
-      callback(e);
+      if (typeof callback === "function") callback(e);
     }
   }
 

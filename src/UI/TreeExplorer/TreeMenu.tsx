@@ -1611,7 +1611,7 @@ class TreeMenu extends Component<Props, State> {
             </Modal.Title>
           </Modal.Header>
           <Modal.Body>
-            <ModelInformationEditor model={this.state.model} />
+            <ModelInformationEditor model={this.state.model} projectService={this.props.projectService} />
           </Modal.Body>
           <Modal.Footer>
             <Button variant="secondary" onClick={this.hideModelInformationEditorModal.bind(this)} >

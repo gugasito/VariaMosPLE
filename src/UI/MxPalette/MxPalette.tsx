@@ -357,6 +357,28 @@ export default class MxPalette extends Component<Props, State> {
     }
   }
 
+  /** El lenguaje DSPL incorporado no depende de PNG publicados por el
+   * servicio remoto; sus elementos usan glifos SVG autocontenidos. */
+  bundledDsplPaletteIcon(languageDefinition: any, type: string): string | null {
+    const isBundledDsplLanguage =
+      String(languageDefinition?.id) === "900002" ||
+      languageDefinition?.name === "DSPL Deployment Mapping v1";
+    if (!isBundledDsplLanguage) return null;
+
+    const appearance: Record<string, { glyph: string; fill: string; stroke: string }> = {
+      RootFeature: { glyph: "R", fill: "#dbeafe", stroke: "#1d4ed8" },
+      AbstractFeature: { glyph: "A", fill: "#f8fafc", stroke: "#475569" },
+      ConcreteFeature: { glyph: "F", fill: "#f0fdf4", stroke: "#15803d" },
+      Bundle: { glyph: "G", fill: "#fef3c7", stroke: "#b45309" },
+      DeploymentMapping: { glyph: "M", fill: "#dbeafe", stroke: "#1d4ed8" },
+      FeatureBinding: { glyph: "V", fill: "#dcfce7", stroke: "#15803d" },
+      SoftwareArtifact: { glyph: "A", fill: "#ffedd5", stroke: "#c2410c" },
+    };
+    const icon = appearance[type] || { glyph: String(type || "?").slice(0, 1).toUpperCase(), fill: "#f8fafc", stroke: "#64748b" };
+    const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 40 40"><rect x="2" y="2" width="36" height="36" rx="8" fill="${icon.fill}" stroke="${icon.stroke}" stroke-width="2"/><text x="20" y="26" text-anchor="middle" font-family="Arial, sans-serif" font-size="17" font-weight="700" fill="${icon.stroke}">${icon.glyph}</text></svg>`;
+    return `data:image/svg+xml,${encodeURIComponent(svg)}`;
+  }
+
   createElementInPalette(graph: any, languageDefinition: any, type: any, element: any, vertexToClone: any, divToolbar: any, toolbar: any) {
     let me = this;
     let drapAndDropCreation = function (graph: any, evt: any, cell: any) {
@@ -376,7 +398,7 @@ export default class MxPalette extends Component<Props, State> {
     mdiv.classList.add("list-inline-item");
     let mspan: HTMLElement = document.createElement("span"); //tooltip
     mspan.classList.add("csstooltiptext2");
-    let iconUrl =
+    let iconUrl = this.bundledDsplPaletteIcon(languageDefinition, String(type)) ||
       "assets/images/models/" + languageDefinition.name + "/" + type + ".png";
     if (element.icon) {
       let contentType = "image/png";
@@ -395,6 +417,9 @@ export default class MxPalette extends Component<Props, State> {
     }
     divToolbar.appendChild(mdiv);
     let img = toolbar.addMode(element.label, iconUrl, drapAndDropCreation);
+    // Una definición remota puede todavía apuntar a un icono inexistente. La
+    // paleta sigue siendo utilizable y muestra un fallback conocido.
+    if (!element.icon && img) img.onerror = () => { img.src = "/images/models/Undefined.png"; };
     // mspan.innerText = key;
 
     mx.mxUtils.makeDraggable(img, graph, drapAndDropCreation);

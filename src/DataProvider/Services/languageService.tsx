@@ -1,10 +1,11 @@
 import { Language } from "../../Domain/ProductLineEngineering/Entities/Language";
 import { LANGUAGES_CLIENT } from "../../Infraestructure/AxiosConfig";
+import { bundledDsplLanguages, withBundledDsplLanguages } from "../BundledDSPL/bundledDspl";
 
 export default class LanguageService { 
 
   getLanguagesDetail(): Language[] {
-    let languages: Language[] = [];
+    let languages: Language[] = bundledDsplLanguages();
 
     try {
       LANGUAGES_CLIENT.get("/languages/detail").then((res) => {
@@ -14,7 +15,8 @@ export default class LanguageService {
         if (responseAPISuccess.message?.includes("Error"))
           throw new Error(JSON.stringify(res.data));
 
-        languages = Object.assign(languages, responseAPISuccess.data);
+        const merged = withBundledDsplLanguages(Object.assign([], responseAPISuccess.data));
+        languages.splice(0, languages.length, ...merged);
       });
     } catch (error) {
       console.log("Something wrong in getLanguageDetail Service: " + error);
@@ -23,7 +25,7 @@ export default class LanguageService {
   }
 
   getLanguagesByUser(user: string): Language[] { 
-    let languages: Language[] = [];
+    let languages: Language[] = bundledDsplLanguages();
     try {
       let url = "/languagesbyuser/" + user;
       LANGUAGES_CLIENT.get(url).then((res) => {
@@ -33,7 +35,8 @@ export default class LanguageService {
         if (responseAPISuccess.message?.includes("Error"))
           throw new Error(JSON.stringify(res.data));
 
-        languages = Object.assign(languages, responseAPISuccess.data);
+        const merged = withBundledDsplLanguages(Object.assign([], responseAPISuccess.data));
+        languages.splice(0, languages.length, ...merged);
       });
     } catch (error) {
       console.log("Something wrong in getLanguageDetail Service: " + error);
@@ -165,7 +168,7 @@ export default class LanguageService {
   }
 
   getLanguages(callBack: any) {
-    let languages: Language[] = [];
+    let languages: Language[] = bundledDsplLanguages();
     try {
       LANGUAGES_CLIENT.get("/languages/detail").then((res) => {
         let responseAPISuccess: ResponseAPISuccess = new ResponseAPISuccess();
@@ -174,7 +177,8 @@ export default class LanguageService {
         if (responseAPISuccess.message?.includes("Error"))
           throw new Error(JSON.stringify(res.data));
 
-        languages = Object.assign(languages, responseAPISuccess.data);
+        const merged = withBundledDsplLanguages(Object.assign([], responseAPISuccess.data));
+        languages.splice(0, languages.length, ...merged);
         callBack(languages);
       });
     } catch (error) {
