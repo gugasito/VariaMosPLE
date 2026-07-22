@@ -1,0 +1,24 @@
+{
+  "schemaVersion": "variamos-project/v1",
+  "status": "draft",
+  "project": { "id": "conference-platform", "name": "Conference Platform" },
+  "artifacts": [],
+  "profiles": [],
+  "artifactProposals": [
+    {
+      "featureId": "feature.registration",
+      "label": "Artefacto por definir para Inscripción",
+      "questions": [
+        "¿Qué clase de artefacto es?",
+        "¿Cuál es su ruta relativa comprobada?"
+      ]
+    }
+  ],
+  "pending": [
+    {
+      "kind": "artifact",
+      "featureId": "feature.registration",
+      "question": "¿Qué archivo, módulo o directorio implementa la feature Inscripción?"
+    }
+  ]
+}

@@ -1,0 +1,27 @@
+{
+  "id": "event-portal-feature-model",
+  "name": "Portal de Eventos — Features",
+  "type": "Feature model with attributes",
+  "languageId": "public-feature-model",
+  "elements": [
+    { "id": "feature-source-portal", "type": "RootFeature", "name": "Portal de Eventos", "x": 390, "y": 40, "width": 180, "height": 60, "properties": [{ "name": "Selected", "value": "Selected" }] },
+    { "id": "feature-source-agenda", "type": "ConcreteFeature", "name": "Agenda", "x": 80, "y": 190, "width": 150, "height": 55, "properties": [{ "name": "Selected", "value": "Selected" }] },
+    { "id": "feature-source-registration", "type": "ConcreteFeature", "name": "Inscripción", "x": 270, "y": 190, "width": 150, "height": 55, "properties": [{ "name": "Selected", "value": "Selected" }] },
+    { "id": "feature-source-notifications", "type": "ConcreteFeature", "name": "Notificaciones", "x": 470, "y": 190, "width": 150, "height": 55, "properties": [{ "name": "Selected", "value": "Selected" }] },
+    { "id": "feature-source-mode", "type": "Bundle", "name": "Modalidad", "x": 680, "y": 185, "width": 120, "height": 60, "properties": [{ "name": "Type", "value": "Xor" }] },
+    { "id": "feature-source-presential", "type": "ConcreteFeature", "name": "Presencial", "x": 640, "y": 330, "width": 150, "height": 55, "properties": [{ "name": "Selected", "value": "Selected" }] },
+    { "id": "feature-source-virtual", "type": "ConcreteFeature", "name": "Virtual", "x": 850, "y": 330, "width": 150, "height": 55, "properties": [{ "name": "Selected", "value": "Unselected" }] },
+    { "id": "feature-source-venue-map", "type": "ConcreteFeature", "name": "Mapa del recinto", "x": 610, "y": 470, "width": 190, "height": 55, "properties": [{ "name": "Selected", "value": "Selected" }] },
+    { "id": "feature-source-welcome-message", "type": "ConcreteFeature", "name": "Mensaje de bienvenida", "x": 850, "y": 470, "width": 190, "height": 55, "properties": [{ "name": "Selected", "value": "Unselected" }] }
+  ],
+  "relationships": [
+    { "id": "feature-rel-root-agenda", "type": "RootFeature_Feature", "sourceId": "feature-source-portal", "targetId": "feature-source-agenda", "properties": [{ "name": "Type", "value": "Mandatory" }] },
+    { "id": "feature-rel-root-registration", "type": "RootFeature_Feature", "sourceId": "feature-source-portal", "targetId": "feature-source-registration", "properties": [{ "name": "Type", "value": "Optional" }] },
+    { "id": "feature-rel-root-notifications", "type": "RootFeature_Feature", "sourceId": "feature-source-portal", "targetId": "feature-source-notifications", "properties": [{ "name": "Type", "value": "Optional" }] },
+    { "id": "feature-rel-root-mode", "type": "RootFeature_Feature", "sourceId": "feature-source-portal", "targetId": "feature-source-mode", "properties": [{ "name": "Type", "value": "Mandatory" }] },
+    { "id": "feature-rel-mode-presential", "type": "Bundle_Feature", "sourceId": "feature-source-mode", "targetId": "feature-source-presential", "properties": [] },
+    { "id": "feature-rel-mode-virtual", "type": "Bundle_Feature", "sourceId": "feature-source-mode", "targetId": "feature-source-virtual", "properties": [] },
+    { "id": "feature-rel-presential-map", "type": "ConcreteFeature_Feature", "sourceId": "feature-source-presential", "targetId": "feature-source-venue-map", "properties": [{ "name": "Type", "value": "Optional" }] },
+    { "id": "feature-rel-root-welcome-message", "type": "RootFeature_Feature", "sourceId": "feature-source-portal", "targetId": "feature-source-welcome-message", "properties": [{ "name": "Type", "value": "Optional" }] }
+  ]
+}

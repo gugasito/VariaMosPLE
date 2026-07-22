@@ -1,0 +1,11 @@
+{
+  "schemaVersion": "variamos-project/v1",
+  "status": "ready",
+  "project": { "id": "unsafe-project", "name": "Proyecto inseguro" },
+  "artifacts": [
+    { "id": "unsafe-project.secret", "kind": "configuration", "version": "1.0.0", "source": { "path": "../../.env" } }
+  ],
+  "profiles": [
+    { "id": "unsafe-project.profile", "name": "Perfil", "builderAdapter": "static-site-v1", "requiredTargetCapabilities": ["static-http"] }
+  ]
+}

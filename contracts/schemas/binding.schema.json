@@ -1,0 +1,116 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://variamosple.org/schemas/dspl/binding/v1",
+  "title": "DSPL feature-artifact bindings",
+  "description": "A set of declarative rules that map selected features to artifact actions.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "id", "bindings"],
+  "properties": {
+    "schemaVersion": {
+      "const": "feature-artifact-bindings/v1"
+    },
+    "id": {
+      "$ref": "#/$defs/stableId"
+    },
+    "bindings": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/$defs/binding"
+      }
+    }
+  },
+  "$defs": {
+    "stableId": {
+      "type": "string",
+      "pattern": "^[a-z0-9]+(?:[._-][a-z0-9]+)*$",
+      "minLength": 3,
+      "maxLength": 120
+    },
+    "binding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "featureId", "when", "actions"],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/stableId"
+        },
+        "featureId": {
+          "$ref": "#/$defs/stableId"
+        },
+        "when": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["selected"],
+          "properties": {
+            "selected": {
+              "const": true
+            }
+          }
+        },
+        "priority": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 1000,
+          "default": 100
+        },
+        "actions": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/$defs/action"
+          }
+        }
+      }
+    },
+    "action": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type"],
+      "properties": {
+        "type": {
+          "enum": [
+            "include",
+            "exclude",
+            "generate",
+            "configure",
+            "build",
+            "test",
+            "publish",
+            "deploy",
+            "migrate",
+            "observe"
+          ]
+        },
+        "artifactId": {
+          "$ref": "#/$defs/stableId"
+        },
+        "parameters": {
+          "type": "object",
+          "additionalProperties": {
+            "type": ["string", "number", "boolean", "null"]
+          }
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "enum": ["include", "exclude", "generate", "configure", "build", "test", "publish", "migrate"]
+              }
+            },
+            "required": ["type"]
+          },
+          "then": {
+            "properties": {
+              "artifactId": true
+            },
+            "required": ["artifactId"]
+          }
+        }
+      ]
+    }
+  }
+}

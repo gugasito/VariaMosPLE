@@ -1,0 +1,14 @@
+{
+  "schemaVersion": "feature-artifact-bindings/v1",
+  "id": "invalid.unknown-artifact",
+  "bindings": [
+    {
+      "id": "binding.unknown-artifact",
+      "featureId": "feature.event.agenda",
+      "when": { "selected": true },
+      "actions": [
+        { "type": "include", "artifactId": "external-project.no-existe" }
+      ]
+    }
+  ]
+}

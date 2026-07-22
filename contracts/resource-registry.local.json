@@ -1,0 +1,19 @@
+{
+  "schemaVersion": "dspl-resource-registry/v1",
+  "catalogs": {},
+  "targets": {
+    "variamos.target.docker.static.local": {
+      "path": "targets/docker-static.local.json",
+      "port": 8092,
+      "releaseState": "external-static"
+    },
+    "variamos.target.docker.node.local": {
+      "path": "targets/docker-node.local.json",
+      "port": 8093,
+      "releaseState": "external-node",
+      "dataState": "external-data"
+    }
+  },
+  "profiles": {},
+  "localRoots": {}
+}

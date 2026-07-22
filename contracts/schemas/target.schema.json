@@ -1,0 +1,48 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://variamosple.org/schemas/dspl/target/v1",
+  "title": "DSPL deployment target",
+  "description": "A target declaration that contains capabilities and secret references but never secret values.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "id", "adapter", "capabilities"],
+  "properties": {
+    "schemaVersion": {
+      "const": "deployment-target/v1"
+    },
+    "id": {
+      "$ref": "#/$defs/stableId"
+    },
+    "adapter": {
+      "$ref": "#/$defs/stableId"
+    },
+    "capabilities": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {
+        "$ref": "#/$defs/stableId"
+      }
+    },
+    "credentialsRef": {
+      "$ref": "#/$defs/secretRef"
+    },
+    "hostRef": {
+      "$ref": "#/$defs/secretRef"
+    }
+  },
+  "$defs": {
+    "stableId": {
+      "type": "string",
+      "pattern": "^[a-z0-9]+(?:[._-][a-z0-9]+)*$",
+      "minLength": 3,
+      "maxLength": 120
+    },
+    "secretRef": {
+      "type": "string",
+      "pattern": "^secret://[a-z0-9][a-z0-9/_-]*$",
+      "minLength": 10,
+      "maxLength": 512
+    }
+  }
+}

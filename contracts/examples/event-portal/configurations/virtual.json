@@ -1,0 +1,15 @@
+{
+  "schemaVersion": "product-configuration/v1",
+  "id": "event-portal.configuration.virtual",
+  "productLineId": "event-portal",
+  "modelVersion": "event-portal-feature-model.v1",
+  "selections": [
+    { "featureId": "feature.event.portal", "selected": true },
+    { "featureId": "feature.event.agenda", "selected": true },
+    { "featureId": "feature.event.registration", "selected": true },
+    { "featureId": "feature.event.notifications", "selected": true },
+    { "featureId": "feature.event.presential", "selected": false },
+    { "featureId": "feature.event.virtual", "selected": true },
+    { "featureId": "feature.event.venue-map", "selected": false }
+  ]
+}

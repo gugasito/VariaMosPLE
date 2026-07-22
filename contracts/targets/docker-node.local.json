@@ -1,0 +1,6 @@
+{
+  "schemaVersion": "deployment-target/v1",
+  "id": "variamos.target.docker.node.local",
+  "adapter": "node-container-v1",
+  "capabilities": ["docker", "node-runtime", "http-api", "single-container", "persistent-data"]
+}

@@ -1,0 +1,6 @@
+{
+  "schemaVersion": "deployment-target/v1",
+  "id": "event-portal.target.static.local",
+  "adapter": "nginx-container-v1",
+  "capabilities": ["docker", "static-http", "single-container"]
+}

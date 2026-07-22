@@ -1,0 +1,12 @@
+{
+  "schemaVersion": "event-portal-feature-ids/v1",
+  "features": {
+    "portal-root": "feature.event.portal",
+    "agenda": "feature.event.agenda",
+    "registration": "feature.event.registration",
+    "notifications": "feature.event.notifications",
+    "presential": "feature.event.presential",
+    "virtual": "feature.event.virtual",
+    "venue-map": "feature.event.venue-map"
+  }
+}

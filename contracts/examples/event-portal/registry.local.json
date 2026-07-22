@@ -1,0 +1,28 @@
+{
+  "schemaVersion": "dspl-resource-registry/v1",
+  "catalogs": {
+    "event-portal.catalog.static": "catalogs/static.local.json",
+    "event-portal.catalog.monolith": "catalogs/monolith.local.json"
+  },
+  "targets": {
+    "event-portal.target.static.local": { "path": "targets/static.local.json", "port": 8089, "releaseState": "static" },
+    "event-portal.target.monolith.local": { "path": "targets/monolith.local.json", "port": 8091, "releaseState": "monolith", "dataState": "data" }
+  },
+  "profiles": {
+    "event-portal.static.local": {
+      "name": "Portal de Eventos — sitio estático",
+      "mappingRef": "mapping.event-portal.static.v1",
+      "catalogRef": "event-portal.catalog.static",
+      "targetRef": "event-portal.target.static.local"
+    },
+    "event-portal.monolith.local": {
+      "name": "Portal de Eventos — monolito modular",
+      "mappingRef": "mapping.event-portal.monolith.v1",
+      "catalogRef": "event-portal.catalog.monolith",
+      "targetRef": "event-portal.target.monolith.local"
+    }
+  },
+  "localRoots": {
+    "event-portal-assets": "../../../examples/event-portal/artifacts"
+  }
+}

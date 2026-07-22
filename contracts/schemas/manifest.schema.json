@@ -1,0 +1,144 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://variamosple.org/schemas/dspl/manifest/v1",
+  "title": "SPL derivation and deployment manifest",
+  "description": "An immutable, validated plan that bridges a VariaMos configuration and technical execution.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "manifestId",
+    "product",
+    "sourceModel",
+    "features",
+    "artifacts",
+    "operations",
+    "target",
+    "verification",
+    "rollback"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": "spl-deployment-manifest/v1"
+    },
+    "manifestId": {
+      "$ref": "#/$defs/stableId"
+    },
+    "product": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "configurationId"],
+      "properties": {
+        "id": { "$ref": "#/$defs/stableId" },
+        "configurationId": { "$ref": "#/$defs/stableId" }
+      }
+    },
+    "sourceModel": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["projectId", "modelId", "version"],
+      "properties": {
+        "projectId": { "$ref": "#/$defs/stableId" },
+        "modelId": { "$ref": "#/$defs/stableId" },
+        "version": { "type": "string", "minLength": 1, "maxLength": 256 }
+      }
+    },
+    "features": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "selected"],
+        "properties": {
+          "id": { "$ref": "#/$defs/stableId" },
+          "selected": { "type": "boolean" }
+        }
+      }
+    },
+    "artifacts": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "version", "digest"],
+        "properties": {
+          "id": { "$ref": "#/$defs/stableId" },
+          "version": { "$ref": "#/$defs/semanticVersion" },
+          "digest": {
+            "type": "string",
+            "pattern": "^sha256:[a-fA-F0-9]{64}$"
+          }
+        }
+      }
+    },
+    "operations": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["type", "adapter"],
+        "properties": {
+          "type": {
+            "enum": ["generate", "build", "test", "publish", "deploy", "verify"]
+          },
+          "adapter": { "$ref": "#/$defs/stableId" }
+        }
+      }
+    },
+    "target": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id"],
+      "properties": {
+        "id": { "$ref": "#/$defs/stableId" },
+        "credentialsRef": { "$ref": "#/$defs/secretRef" }
+      }
+    },
+    "verification": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["type"],
+        "properties": {
+          "type": {
+            "enum": ["http-health-check", "command", "smoke-test"]
+          },
+          "path": { "type": "string", "minLength": 1, "maxLength": 1024 }
+        }
+      }
+    },
+    "rollback": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["strategy"],
+      "properties": {
+        "strategy": {
+          "enum": ["previous-successful-release", "none"]
+        }
+      }
+    }
+  },
+  "$defs": {
+    "stableId": {
+      "type": "string",
+      "pattern": "^[a-z0-9]+(?:[._-][a-z0-9]+)*$",
+      "minLength": 3,
+      "maxLength": 120
+    },
+    "semanticVersion": {
+      "type": "string",
+      "pattern": "^(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)(?:-[0-9A-Za-z.-]+)?(?:\\+[0-9A-Za-z.-]+)?$"
+    },
+    "secretRef": {
+      "type": "string",
+      "pattern": "^secret://[a-z0-9][a-z0-9/_-]*$",
+      "minLength": 10,
+      "maxLength": 512
+    }
+  }
+}

@@ -1,0 +1,167 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://variamosple.org/schemas/dspl/variamos-project/v1",
+  "title": "VariaMos external project descriptor",
+  "description": "Descriptor versionado de los artefactos y perfiles técnicos que un proyecto externo expone a VariaMos.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "status", "project", "artifacts", "profiles"],
+  "properties": {
+    "schemaVersion": { "const": "variamos-project/v1" },
+    "status": { "enum": ["draft", "ready"] },
+    "project": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "name"],
+      "properties": {
+        "id": { "$ref": "#/$defs/stableId" },
+        "name": { "type": "string", "minLength": 1, "maxLength": 160 },
+        "description": { "type": "string", "maxLength": 1000 }
+      }
+    },
+    "artifacts": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/artifact" }
+    },
+    "profiles": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/profile" }
+    },
+    "artifactProposals": {
+      "description": "Sugerencias no ejecutables derivadas del feature model. No sustituyen un artefacto listo ni contienen rutas inferidas.",
+      "type": "array",
+      "items": { "$ref": "#/$defs/artifactProposal" }
+    },
+    "pending": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/pendingQuestion" }
+    }
+  },
+  "allOf": [
+    {
+      "if": { "properties": { "status": { "const": "draft" } }, "required": ["status"] },
+      "then": { "required": ["pending"], "properties": { "pending": { "type": "array", "minItems": 1 } } }
+    },
+    {
+      "if": { "properties": { "status": { "const": "ready" } }, "required": ["status"] },
+      "then": {
+        "properties": {
+          "artifacts": { "type": "array", "minItems": 1 },
+          "profiles": { "type": "array", "minItems": 1 },
+          "artifactProposals": { "type": "array", "maxItems": 0 },
+          "pending": { "type": "array", "maxItems": 0 }
+        }
+      }
+    }
+  ],
+  "$defs": {
+    "stableId": {
+      "type": "string",
+      "pattern": "^[a-z0-9]+(?:[._-][a-z0-9]+)*$",
+      "minLength": 3,
+      "maxLength": 120
+    },
+    "semanticVersion": {
+      "type": "string",
+      "pattern": "^(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)(?:-[0-9A-Za-z.-]+)?(?:\\+[0-9A-Za-z.-]+)?$"
+    },
+    "safeRelativePath": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 1024,
+      "pattern": "^(?!/)(?![A-Za-z]:)(?!.*(?:^|/)\\.\\.(?:/|$))(?!.*\\\\).+$"
+    },
+    "artifact": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "kind", "version", "source"],
+      "properties": {
+        "id": { "$ref": "#/$defs/stableId" },
+        "label": { "type": "string", "minLength": 1, "maxLength": 160 },
+        "description": { "type": "string", "maxLength": 1000 },
+        "kind": {
+          "enum": ["html-fragment", "source-bundle", "module", "configuration", "template", "test-suite", "container-image"]
+        },
+        "version": { "$ref": "#/$defs/semanticVersion" },
+        "source": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["path"],
+          "properties": { "path": { "$ref": "#/$defs/safeRelativePath" } }
+        },
+        "integrity": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["algorithm", "digest"],
+          "properties": {
+            "algorithm": { "const": "sha256" },
+            "digest": { "type": "string", "pattern": "^sha256:[a-fA-F0-9]{64}$" }
+          }
+        },
+        "build": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": { "entrypoint": { "$ref": "#/$defs/safeRelativePath" } }
+        },
+        "dependsOn": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": { "$ref": "#/$defs/stableId" }
+        },
+        "requiresCapabilities": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": { "$ref": "#/$defs/stableId" }
+        }
+      }
+    },
+    "profile": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "name", "builderAdapter", "requiredTargetCapabilities"],
+      "properties": {
+        "id": { "$ref": "#/$defs/stableId" },
+        "name": { "type": "string", "minLength": 1, "maxLength": 160 },
+        "builderAdapter": { "$ref": "#/$defs/stableId" },
+        "testAdapter": { "$ref": "#/$defs/stableId" },
+        "artifactIds": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": { "$ref": "#/$defs/stableId" }
+        },
+        "requiredTargetCapabilities": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": { "$ref": "#/$defs/stableId" }
+        }
+      }
+    },
+    "pendingQuestion": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "featureId", "question"],
+      "properties": {
+        "kind": { "enum": ["artifact", "path", "profile", "binding"] },
+        "featureId": { "type": "string", "minLength": 1, "maxLength": 160 },
+        "question": { "type": "string", "minLength": 1, "maxLength": 500 }
+      }
+    },
+    "artifactProposal": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["featureId", "label", "questions"],
+      "properties": {
+        "featureId": { "type": "string", "minLength": 1, "maxLength": 160 },
+        "label": { "type": "string", "minLength": 1, "maxLength": 200 },
+        "questions": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": { "type": "string", "minLength": 1, "maxLength": 500 }
+        }
+      }
+    }
+  }
+}

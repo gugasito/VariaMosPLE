@@ -1,0 +1,6 @@
+{
+  "schemaVersion": "deployment-target/v1",
+  "id": "variamos.target.docker.static.local",
+  "adapter": "nginx-container-v1",
+  "capabilities": ["docker", "static-http", "single-container"]
+}

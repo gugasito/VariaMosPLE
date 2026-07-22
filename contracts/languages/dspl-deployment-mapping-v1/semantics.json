@@ -1,0 +1,19 @@
+{
+  "elementTypes": [],
+  "elementTranslationRules": {},
+  "attributeTypes": [],
+  "attributeTranslationRules": {},
+  "typingRelationTypes": [],
+  "typingRelationTranslationRules": {},
+  "hierarchyTypes": [],
+  "hierarchyTranslationRules": {},
+  "relationReificationTypes": [],
+  "relationReificationTranslationRules": {},
+  "relationReificationExpansions": {},
+  "relationReificationPropertySchema": {},
+  "relationReificationTypeDependentExpansions": {},
+  "relationTypes": [],
+  "relationPropertySchema": {},
+  "relationTranslationRules": {},
+  "ignoredRelationTypes": ["ContainsBinding", "ContainsArtifact", "ImplementedBy"]
+}

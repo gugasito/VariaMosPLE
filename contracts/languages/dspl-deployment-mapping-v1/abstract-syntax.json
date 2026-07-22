@@ -1,0 +1,33 @@
+{
+  "elements": {
+    "DeploymentMapping": {
+      "properties": [
+        { "name": "mapping_schema", "type": "String", "possibleValues": "dspl-deployment-mapping/v1" },
+        { "name": "mapping_ref", "type": "String" },
+        { "name": "catalog_ref", "type": "String" },
+        { "name": "target_ref", "type": "String" }
+      ]
+    },
+    "FeatureBinding": {
+      "properties": [
+        { "name": "source_feature_id", "type": "String" },
+        { "name": "feature_ref", "type": "String" }
+      ]
+    },
+    "SoftwareArtifact": {
+      "properties": [
+        { "name": "artifact_ref", "type": "String" }
+      ]
+    }
+  },
+  "restrictions": {
+    "quantity_element": [
+      { "element": "DeploymentMapping", "min": 1, "max": 1 }
+    ]
+  },
+  "relationships": {
+    "ContainsBinding": { "min": 0, "max": 9999999, "source": "DeploymentMapping", "target": ["FeatureBinding"], "properties": [] },
+    "ContainsArtifact": { "min": 0, "max": 9999999, "source": "DeploymentMapping", "target": ["SoftwareArtifact"], "properties": [] },
+    "ImplementedBy": { "min": 0, "max": 9999999, "source": "FeatureBinding", "target": ["SoftwareArtifact"], "properties": [] }
+  }
+}

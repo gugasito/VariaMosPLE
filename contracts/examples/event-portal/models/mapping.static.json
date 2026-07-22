@@ -1,0 +1,32 @@
+{
+  "id": "event-portal-mapping-static",
+  "name": "Portal de Eventos — Mapping estático",
+  "type": "DSPL Deployment Mapping v1",
+  "sourceModelIds": ["event-portal-feature-model"],
+  "elements": [
+    { "id": "mapping-root", "type": "DeploymentMapping", "properties": [{ "name": "mapping_schema", "value": "dspl-deployment-mapping/v1" }, { "name": "mapping_ref", "value": "mapping.event-portal.static.v1" }, { "name": "catalog_ref", "value": "event-portal.catalog.static" }, { "name": "target_ref", "value": "event-portal.target.static.local" }] },
+    { "id": "binding-portal", "type": "FeatureBinding", "properties": [{ "name": "source_feature_id", "value": "feature-source-portal" }, { "name": "feature_ref", "value": "feature.event.portal" }] },
+    { "id": "binding-agenda", "type": "FeatureBinding", "properties": [{ "name": "source_feature_id", "value": "feature-source-agenda" }, { "name": "feature_ref", "value": "feature.event.agenda" }] },
+    { "id": "binding-registration", "type": "FeatureBinding", "properties": [{ "name": "source_feature_id", "value": "feature-source-registration" }, { "name": "feature_ref", "value": "feature.event.registration" }] },
+    { "id": "binding-notifications", "type": "FeatureBinding", "properties": [{ "name": "source_feature_id", "value": "feature-source-notifications" }, { "name": "feature_ref", "value": "feature.event.notifications" }] },
+    { "id": "binding-presential", "type": "FeatureBinding", "properties": [{ "name": "source_feature_id", "value": "feature-source-presential" }, { "name": "feature_ref", "value": "feature.event.presential" }] },
+    { "id": "binding-virtual", "type": "FeatureBinding", "properties": [{ "name": "source_feature_id", "value": "feature-source-virtual" }, { "name": "feature_ref", "value": "feature.event.virtual" }] },
+    { "id": "binding-venue-map", "type": "FeatureBinding", "properties": [{ "name": "source_feature_id", "value": "feature-source-venue-map" }, { "name": "feature_ref", "value": "feature.event.venue-map" }] },
+    { "id": "artifact-shell", "type": "SoftwareArtifact", "properties": [{ "name": "artifact_ref", "value": "event-portal.static.shell" }] },
+    { "id": "artifact-agenda", "type": "SoftwareArtifact", "properties": [{ "name": "artifact_ref", "value": "event-portal.static.agenda" }] },
+    { "id": "artifact-registration", "type": "SoftwareArtifact", "properties": [{ "name": "artifact_ref", "value": "event-portal.static.registration" }] },
+    { "id": "artifact-notifications", "type": "SoftwareArtifact", "properties": [{ "name": "artifact_ref", "value": "event-portal.static.notifications" }] },
+    { "id": "artifact-presential", "type": "SoftwareArtifact", "properties": [{ "name": "artifact_ref", "value": "event-portal.static.presential" }] },
+    { "id": "artifact-virtual", "type": "SoftwareArtifact", "properties": [{ "name": "artifact_ref", "value": "event-portal.static.virtual" }] },
+    { "id": "artifact-venue-map", "type": "SoftwareArtifact", "properties": [{ "name": "artifact_ref", "value": "event-portal.static.venue-map" }] }
+  ],
+  "relationships": [
+    { "id": "implements-portal", "type": "ImplementedBy", "sourceId": "binding-portal", "targetId": "artifact-shell" },
+    { "id": "implements-agenda", "type": "ImplementedBy", "sourceId": "binding-agenda", "targetId": "artifact-agenda" },
+    { "id": "implements-registration", "type": "ImplementedBy", "sourceId": "binding-registration", "targetId": "artifact-registration" },
+    { "id": "implements-notifications", "type": "ImplementedBy", "sourceId": "binding-notifications", "targetId": "artifact-notifications" },
+    { "id": "implements-presential", "type": "ImplementedBy", "sourceId": "binding-presential", "targetId": "artifact-presential" },
+    { "id": "implements-virtual", "type": "ImplementedBy", "sourceId": "binding-virtual", "targetId": "artifact-virtual" },
+    { "id": "implements-venue-map", "type": "ImplementedBy", "sourceId": "binding-venue-map", "targetId": "artifact-venue-map" }
+  ]
+}

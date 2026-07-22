@@ -1,0 +1,14 @@
+{
+  "name": "DSPL Deployment Mapping v1",
+  "type": "APPLICATION",
+  "stateAccept": "PENDING",
+  "abstractSyntax": {
+    "$ref": "./abstract-syntax.json"
+  },
+  "concreteSyntax": {
+    "$ref": "./concrete-syntax.json"
+  },
+  "semantics": {
+    "$ref": "./semantics.json"
+  }
+}

@@ -1,0 +1,12 @@
+{
+  "elements": {
+    "DeploymentMapping": { "design": "shape=swimlane;fillColor=#dbeafe;strokeColor=#1d4ed8;fontStyle=1;", "label_property": "mapping_ref", "width": 240, "height": 120, "resizable": "true" },
+    "FeatureBinding": { "design": "shape=rectangle;rounded=1;fillColor=#dcfce7;strokeColor=#15803d;", "label_property": "feature_ref", "width": 180, "height": 70, "resizable": "true" },
+    "SoftwareArtifact": { "design": "shape=rectangle;rounded=1;fillColor=#ffedd5;strokeColor=#c2410c;", "label_property": "artifact_ref", "width": 200, "height": 70, "resizable": "true" }
+  },
+  "relationships": {
+    "ContainsBinding": { "styles": [{ "style": "strokeColor=#64748b;dashed=1;endArrow=open;" }], "label_fixed": "contiene" },
+    "ContainsArtifact": { "styles": [{ "style": "strokeColor=#64748b;dashed=1;endArrow=open;" }], "label_fixed": "contiene" },
+    "ImplementedBy": { "styles": [{ "style": "strokeColor=#2563eb;strokeWidth=2;endArrow=block;" }], "label_fixed": "implementa" }
+  }
+}
