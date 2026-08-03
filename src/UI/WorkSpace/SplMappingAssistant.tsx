@@ -3,8 +3,8 @@ import Button from "react-bootstrap/Button";
 import Modal from "react-bootstrap/Modal";
 import ProjectService from "../../Application/Project/ProjectService";
 import { Model } from "../../Domain/ProductLineEngineering/Entities/Model";
-import { applyBindingAssignments, DsplProfileSummary, synchronizeDsplMapping } from "../../Application/DSPL/DsplMappingFactory";
-import { getDsplOrchestratorErrorMessage, getDsplProfiles } from "../../DataProvider/Services/dsplOrchestratorService";
+import { applyBindingAssignments, isSplMappingLanguage, SplProfileSummary, synchronizeSplMapping } from "../../Application/SPL/SplMappingFactory";
+import { getSplOrchestratorErrorMessage, getSplProfiles } from "../../DataProvider/Services/splOrchestratorService";
 
 interface Props { projectService: ProjectService; featureModel: Model; mappingModel?: Model; onCreated?: (model: Model) => void; }
 
@@ -23,10 +23,10 @@ function assignmentsFrom(mapping?: Model): Record<string, string[]> {
   }, {} as Record<string, string[]>);
 }
 
-/** Modal de configuración humana: automatiza la estructura, pero nunca
- * infiere qué código implementa una feature sin confirmación explícita. */
-export default function DsplMappingAssistant({ projectService, featureModel, mappingModel, onCreated }: Props) {
-  const [profiles, setProfiles] = useState<DsplProfileSummary[]>([]);
+/** Human configuration dialog: automates the structure but never infers which
+ * code implements a feature without explicit confirmation. */
+export default function SplMappingAssistant({ projectService, featureModel, mappingModel, onCreated }: Props) {
+  const [profiles, setProfiles] = useState<SplProfileSummary[]>([]);
   const [profileId, setProfileId] = useState("");
   const [open, setOpen] = useState(false);
   const [assignments, setAssignments] = useState<Record<string, string[]>>({});
@@ -38,11 +38,11 @@ export default function DsplMappingAssistant({ projectService, featureModel, map
     if (!open) return;
     setError("");
     setAssignments(assignmentsFrom(mappingModel));
-    getDsplProfiles().then((items) => {
+    getSplProfiles().then((items) => {
       setProfiles(items);
       const preferred = items.find((item) => item.mappingRef === mappingRef(mappingModel));
       setProfileId(preferred?.id || items[0]?.id || "");
-    }).catch((cause) => setError(getDsplOrchestratorErrorMessage(cause)));
+    }).catch((cause) => setError(getSplOrchestratorErrorMessage(cause)));
   }, [open, mappingModel]);
 
   const toggle = (featureId: string, artifactId: string) => setAssignments((previous) => {
@@ -55,9 +55,9 @@ export default function DsplMappingAssistant({ projectService, featureModel, map
     if (!profile) return;
     const productLine = projectService.getProductLineSelected();
     const existing = mappingModel || productLine.applicationEngineering.models.find((candidate) =>
-      candidate.type === "DSPL Deployment Mapping v1" && candidate.sourceModelIds?.length === 1 && candidate.sourceModelIds[0] === featureModel.id && mappingRef(candidate) === profile.mappingRef
+      isSplMappingLanguage(candidate.type) && candidate.sourceModelIds?.length === 1 && candidate.sourceModelIds[0] === featureModel.id && mappingRef(candidate) === profile.mappingRef
     );
-    const mapping = applyBindingAssignments(synchronizeDsplMapping(existing, featureModel, profile), assignments);
+    const mapping = applyBindingAssignments(synchronizeSplMapping(existing, featureModel, profile), assignments);
     if (!existing) productLine.applicationEngineering.models.push(mapping);
     if (!productLine.applicationEngineering.languagesAllowed.includes(mapping.languageId)) {
       productLine.applicationEngineering.languagesAllowed.push(mapping.languageId);
@@ -70,20 +70,22 @@ export default function DsplMappingAssistant({ projectService, featureModel, map
   };
 
   return <>
-    <Button size="sm" variant="outline-secondary" onClick={() => setOpen(true)}>Configurar bindings</Button>
-    <Modal show={open} onHide={() => setOpen(false)} size="xl" centered scrollable aria-label="Configurar despliegue DSPL">
-      <Modal.Header closeButton><Modal.Title>Configurar despliegue DSPL</Modal.Title></Modal.Header>
+    <Button size="sm" variant="outline-secondary" onClick={() => setOpen(true)}>Configure bindings</Button>
+    <Modal show={open} onHide={() => setOpen(false)} size="xl" centered scrollable aria-label="Configure SPL deployment">
+      <Modal.Header closeButton><Modal.Title>Configure SPL deployment</Modal.Title></Modal.Header>
       <Modal.Body>
-        <p className="text-muted">Elige un perfil y confirma qué artefactos realizan cada feature. Un artefacto es una unidad técnica versionable —archivo, módulo, configuración o prueba— y puedes marcar varios por feature.</p>
+        <p className="text-muted">Choose a profile and confirm which artifacts implement each feature. An artifact is a versioned technical unit—a file, module, configuration, or test—and each feature can use several artifacts.</p>
         {error && <div className="alert alert-danger">{error}</div>}
-        <label className="d-block mb-3">Perfil técnico
-          <select aria-label="Perfil técnico" value={profileId} onChange={(event) => setProfileId(event.target.value)} style={{ display: "block", width: "100%", marginTop: 4 }}>
+        <label className="d-block mb-3">Technical profile
+          <select aria-label="Technical profile" value={profileId} onChange={(event) => setProfileId(event.target.value)} style={{ display: "block", width: "100%", marginTop: 4 }}>
             {profiles.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}
           </select>
         </label>
         {profile?.provenance && <div className="alert alert-light border py-2" style={{ fontSize: 12 }}>
-          <strong>Fuente Git:</strong> conexión <code>{profile.provenance.connectionId}</code><br />
-          <strong>Commit:</strong> <code>{profile.provenance.resolvedCommit}</code><br />
+          <strong>Source:</strong> {profile.provenance.provider === "git" ? "Git" : "Local folder"} — connection <code>{profile.provenance.connectionId}</code><br />
+          {profile.provenance.provider === "git"
+            ? <><strong>Commit:</strong> <code>{profile.provenance.resolvedCommit}</code><br /></>
+            : <><strong>Snapshot:</strong> <code>{profile.provenance.snapshotDigest}</code><br /></>}
           <strong>Descriptor:</strong> <code>{profile.provenance.descriptorPath}</code>
         </div>}
         {profile && <div style={{ overflowX: "auto" }}><table className="table table-sm table-bordered align-middle" style={{ minWidth: 620, fontSize: 12 }}>
@@ -91,7 +93,7 @@ export default function DsplMappingAssistant({ projectService, featureModel, map
           <tbody>{features.map((feature) => <tr key={feature.id}><td>{feature.name}</td>{profile.artifacts.map((artifact) => <td className="text-center" key={artifact.id}><input aria-label={`${feature.name} ${artifact.id}`} type="checkbox" checked={(assignments[feature.id] || []).includes(artifact.id)} onChange={() => toggle(feature.id, artifact.id)} /></td>)}</tr>)}</tbody>
         </table></div>}
       </Modal.Body>
-      <Modal.Footer><Button variant="outline-secondary" onClick={() => setOpen(false)}>Cancelar</Button><Button variant="primary" disabled={!profile} onClick={confirm}>{mappingModel ? "Actualizar mapping" : "Crear mapping"}</Button></Modal.Footer>
+      <Modal.Footer><Button variant="outline-secondary" onClick={() => setOpen(false)}>Cancel</Button><Button variant="primary" disabled={!profile} onClick={confirm}>{mappingModel ? "Update mapping" : "Create mapping"}</Button></Modal.Footer>
     </Modal>
   </>;
 }

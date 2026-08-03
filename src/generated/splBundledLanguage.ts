@@ -1,6 +1,6 @@
-/* Lenguaje DSPL incorporado a la aplicación normal. Generado desde contracts/languages. */
-export const BUNDLED_DSPL_MAPPING_LANGUAGE = {
-  "name": "DSPL Deployment Mapping v1",
+/* SPL language bundled with the application. Generated from contracts/languages. */
+export const BUNDLED_SPL_MAPPING_LANGUAGE = {
+  "name": "SPL Deployment Mapping v1",
   "type": "APPLICATION",
   "stateAccept": "APPROVED",
   "abstractSyntax": {
@@ -10,7 +10,7 @@ export const BUNDLED_DSPL_MAPPING_LANGUAGE = {
           {
             "name": "mapping_schema",
             "type": "String",
-            "possibleValues": "dspl-deployment-mapping/v1"
+            "possibleValues": "spl-deployment-mapping/v1"
           },
           {
             "name": "mapping_ref",
@@ -117,7 +117,7 @@ export const BUNDLED_DSPL_MAPPING_LANGUAGE = {
             "style": "strokeColor=#64748b;dashed=1;endArrow=open;"
           }
         ],
-        "label_fixed": "contiene"
+        "label_fixed": "contains"
       },
       "ContainsArtifact": {
         "styles": [
@@ -125,7 +125,7 @@ export const BUNDLED_DSPL_MAPPING_LANGUAGE = {
             "style": "strokeColor=#64748b;dashed=1;endArrow=open;"
           }
         ],
-        "label_fixed": "contiene"
+        "label_fixed": "contains"
       },
       "ImplementedBy": {
         "styles": [

@@ -357,13 +357,14 @@ export default class MxPalette extends Component<Props, State> {
     }
   }
 
-  /** El lenguaje DSPL incorporado no depende de PNG publicados por el
+  /** El lenguaje SPL incorporado no depende de PNG publicados por el
    * servicio remoto; sus elementos usan glifos SVG autocontenidos. */
-  bundledDsplPaletteIcon(languageDefinition: any, type: string): string | null {
-    const isBundledDsplLanguage =
+  bundledSplPaletteIcon(languageDefinition: any, type: string): string | null {
+    const isBundledSplLanguage =
       String(languageDefinition?.id) === "900002" ||
+      languageDefinition?.name === "SPL Deployment Mapping v1" ||
       languageDefinition?.name === "DSPL Deployment Mapping v1";
-    if (!isBundledDsplLanguage) return null;
+    if (!isBundledSplLanguage) return null;
 
     const appearance: Record<string, { glyph: string; fill: string; stroke: string }> = {
       RootFeature: { glyph: "R", fill: "#dbeafe", stroke: "#1d4ed8" },
@@ -398,7 +399,7 @@ export default class MxPalette extends Component<Props, State> {
     mdiv.classList.add("list-inline-item");
     let mspan: HTMLElement = document.createElement("span"); //tooltip
     mspan.classList.add("csstooltiptext2");
-    let iconUrl = this.bundledDsplPaletteIcon(languageDefinition, String(type)) ||
+    let iconUrl = this.bundledSplPaletteIcon(languageDefinition, String(type)) ||
       "assets/images/models/" + languageDefinition.name + "/" + type + ".png";
     if (element.icon) {
       let contentType = "image/png";

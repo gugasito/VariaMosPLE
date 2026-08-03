@@ -1,6 +1,7 @@
 import React, { Component } from "react";
 import { Model } from "../../Domain/ProductLineEngineering/Entities/Model";
 import ProjectService from "../../Application/Project/ProjectService";
+import { isSplMappingLanguage } from "../../Application/SPL/SplMappingFactory";
  
 
 interface Props { 
@@ -20,7 +21,7 @@ export default class ModelInformationEditor extends Component<Props, State> {
   }   
 
   render() {
-    const isDsplMapping = this.props.model.type === "DSPL Deployment Mapping v1";
+    const isSplMapping = isSplMappingLanguage(this.props.model.type);
     const featureModels = this.props.projectService?.getProductLineSelected()?.domainEngineering?.models.filter((candidate) => candidate.elements.some((element) => element.properties?.some((property) => property.name === "Selected"))) || [];
     return (
       <div className=""> 
@@ -77,20 +78,20 @@ export default class ModelInformationEditor extends Component<Props, State> {
                 </div>
                 <div>
                   <div>
-                    <label>{isDsplMapping ? "Modelo de features fuente" : "Source model IDs"}</label>
-                    {isDsplMapping ? <select className="form-control" value={(this.props.model.sourceModelIds || [])[0] || ""} onChange={this.selectSourceFeatureModel}>
-                      <option value="">Selecciona un modelo de features</option>
+                    <label>{isSplMapping ? "Source feature model" : "Source model IDs"}</label>
+                    {isSplMapping ? <select className="form-control" value={(this.props.model.sourceModelIds || [])[0] || ""} onChange={this.selectSourceFeatureModel}>
+                      <option value="">Select a feature model</option>
                       {featureModels.map((featureModel) => <option key={featureModel.id} value={featureModel.id}>{featureModel.name} ({featureModel.id})</option>)}
                     </select> : <input
                       type="text"
                       className="form-control"
-                      placeholder="id-del-modelo-feature"
+                      placeholder="feature-model-id"
                       id="inputSourceModelIds"
                       value={(this.props.model.sourceModelIds || []).join(", ")}
                       onChange={this.inputSourceModelIds_onChange}
                     />}
                     <small className="form-text text-muted">
-                      {isDsplMapping ? "El mapping DSPL queda asociado a exactamente un modelo de features." : "IDs separados por coma."}
+                      {isSplMapping ? "The SPL mapping is linked to exactly one feature model." : "Comma-separated IDs."}
                     </small>
                   </div>
                 </div>

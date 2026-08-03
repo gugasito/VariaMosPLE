@@ -6,7 +6,7 @@ import ElementsPannel from "../DiagramEditor/ElementsPannel";
 import BillOfMaterialsEditor from "../Scope/BillOfMaterialsEditor";
 import TreeExplorer from "../TreeExplorer/TreeExplorer";
 import FloatingChat from "./Chatbot/FloatingChat";
-import DsplDerivationPanel from "./DsplDerivationPanel";
+import SplDerivationPanel from "./SplDerivationPanel";
 import { Model } from "../../Domain/ProductLineEngineering/Entities/Model";
 import UvlEditor from "../UvlEditor/UvlEditor";
 
@@ -111,7 +111,7 @@ render() {
                             <TreeExplorer
                                 projectService={this.props.projectService}
                                 footer={this.state.selectedModel && (
-                                    <DsplDerivationPanel
+                                    <SplDerivationPanel
                                         projectService={this.props.projectService}
                                         model={this.state.selectedModel}
                                     />
