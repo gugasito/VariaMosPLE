@@ -1,42 +1,42 @@
-# Contratos DSPL
+# SPL contracts
 
-Estos contratos implementan la primera parte de la línea base maestra: separar el modelo de variabilidad de los detalles tecnológicos necesarios para derivar y desplegar un producto.
+These contracts implement the first part of the master baseline: separating the variability model from the technical details needed to derive and deploy a product.
 
 ```text
-Feature seleccionada
-  -> binding declarativo
-  -> artefacto versionado del catálogo
-  -> manifest validado
-  -> builder/deployer con adapter explícito
+Selected feature
+  -> declarative binding
+  -> versioned catalog artifact
+  -> validated manifest
+  -> builder/deployer with an explicit adapter
 ```
 
-## Contenido
+## Contents
 
-- `schemas/`: JSON Schema Draft 2020-12 de artefacto, catálogo, binding, configuración, target, manifest y descriptor externo `variamos-project/v1`.
-- `examples/event-portal/`: fixture de regresión propio con feature model, dos mappings, tres configuraciones, catálogo, targets, registro local y hashes verificables.
-- `languages/dspl-deployment-mapping-v1/`: bundle versionado del lenguaje privado que modela la realización técnica de una feature sin reemplazar el lenguaje público de features.
-- `examples/invalid/`: fixtures que deben fallar una validación.
-- `examples/variamos-project/`: descriptor listo, borrador válido y casos inseguros que deben fallar.
-- `scripts/validate-contracts.cjs`: validación de esquema y referencias cruzadas.
-- `tests/contracts.test.cjs`: pruebas automáticas de los contratos.
+- `schemas/`: JSON Schema Draft 2020-12 definitions for artifacts, catalogs, bindings, configurations, targets, manifests, and the external `variamos-project/v1` descriptor.
+- `examples/event-portal/`: an isolated regression fixture with a feature model, two mappings, three configurations, a catalog, targets, a local registry, and verifiable hashes.
+- `languages/spl-deployment-mapping-v1/`: the versioned bundle of the private language that models the technical realization of a feature without replacing the public feature language.
+- `examples/invalid/`: fixtures that must fail validation.
+- `examples/variamos-project/`: a ready descriptor, a valid draft, and unsafe cases that must fail.
+- `scripts/validate-contracts.cjs`: schema and cross-reference validation.
+- `tests/contracts.test.cjs`: automated contract tests.
 
-## Comandos
+## Commands
 
-Desde la raíz del repositorio:
+From the repository root:
 
 ```bash
 npm run validate:contracts
 npm run test:contracts
 ```
 
-## Alcance de esta iteración
+## Scope of this iteration
 
-Los contratos no descargan, construyen ni despliegan software por sí mismos. Establecen qué información debe existir antes de que un resolver o un adapter del orquestador pueda hacerlo de manera reproducible. El adapter local `nginx-container-v1` consume el manifest validado, pero sus registros de runtime son estado operacional y no forman parte del contrato de configuración.
+The contracts do not download, build, or deploy software by themselves. They establish which information must exist before an orchestrator resolver or adapter can do so reproducibly. The local `nginx-container-v1` adapter consumes the validated manifest, but its runtime records are operational state and are not part of the configuration contract.
 
-El catálogo declara además `derivation.builderAdapter` y, opcionalmente, `derivation.testAdapter`. Así, el resolver puede producir un plan de build y test sin deducir esos adapters a partir de un nombre de archivo o de una URL.
+The catalog also declares `derivation.builderAdapter` and, optionally, `derivation.testAdapter`. The resolver can therefore produce a build and test plan without inferring those adapters from a filename or URL.
 
-El fixture Portal de Eventos usa exclusivamente activos propios y verifica dos perfiles: sitio estático y monolito modular. La validación de contratos comprueba sus esquemas, IDs, relaciones modelo–mapping, rutas confinadas y SHA-256 de cada activo antes de que el orquestador pueda usarlo. No se instala como proyecto ni usuario al ejecutar la aplicación normal.
+The Event Portal fixture uses only project-owned assets and verifies two profiles: static site and modular monolith. Contract validation checks its schemas, IDs, model–mapping relationships, confined paths, and every asset's SHA-256 before the orchestrator can use it. It is not installed as a project or user when the normal application runs.
 
-La relación visual `ImplementedBy` de VariaMos se conservará durante la migración, pero se interpretará como referencia a un binding o a un `artifact_ref`, nunca como una URL directa de producción.
+The VariaMos visual `ImplementedBy` relationship is preserved during migration, but it is interpreted as a reference to a binding or an `artifact_ref`, never as a direct production URL.
 
-`variamos-project/v1` separa el repositorio de su conexión operacional. El descriptor declara rutas relativas, artefactos y adapters autorizados; el orquestador aporta provider, commit resuelto, checkout, target y `credentialRef`. Un descriptor `draft` puede incluir `artifactProposals` no ejecutables, preguntas pendientes, validarse y descargarse; sólo `ready`, sin propuestas ni pendientes, puede importarse.
+`variamos-project/v1` separates the repository from its operational connection. The descriptor declares relative paths, artifacts, and authorized adapters; the orchestrator supplies the provider, resolved commit, checkout, target, and `credentialRef`. The contract retains `draft` for incomplete documents and `ready` for imports. The UI no longer generates drafts: it distributes `public/templates/spl.json` with real values and verifies that the adapted descriptor is `ready`, consistent, and uses authorized operational combinations.

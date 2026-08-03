@@ -1,12 +1,12 @@
-# Portal de Eventos — fixture de regresión DSPL
+# Event Portal — SPL regression fixture
 
-Este directorio contiene activos propios usados exclusivamente por pruebas de regresión. La aplicación normal no instala este proyecto ni crea una identidad especial.
+This directory contains project-owned assets used exclusively by regression tests. The normal application neither installs this project nor creates a special identity.
 
-Las mismas features de negocio se realizan de dos formas:
+The same business features are implemented in two ways:
 
-- `artifacts/static/`: fragmentos para un sitio estático derivado.
-- `artifacts/modular-monolith/`: módulos TypeScript ensamblados por `node-modular-monolith-v1` en un único proceso Node.
+- `artifacts/static/`: fragments for a derived static site.
+- `artifacts/modular-monolith/`: TypeScript modules assembled by `node-modular-monolith-v1` into a single Node process.
 
-La inscripción demuestra una feature compuesta: interfaz, API, esquema de datos y prueba. El producto derivado persiste inscripciones en un volumen local del contenedor; no usa credenciales ni una base de datos externa.
+Registration demonstrates a composite feature: UI, API, data schema, and test. The derived product persists registrations in a local container volume; it uses neither credentials nor an external database.
 
-La selección de features y los bindings se encuentran en `contracts/examples/event-portal/`.
+Feature selections and bindings are in `contracts/examples/event-portal/`.

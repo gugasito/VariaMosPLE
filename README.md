@@ -1,5 +1,9 @@
 # VariaMosPLE
 
+## Project decisions
+
+The canonical scope, terminology, support claims, implementation status, and open decisions for the SPL work are recorded in [Project Source of Truth](docs/spl/PROJECT_SOURCE_OF_TRUTH.md). New work must follow that document. `SPL` is the current public and academic name; previous identifiers are accepted only when reading existing projects.
+
 ## Install
 
 ```bash
@@ -8,18 +12,18 @@ npm install
 
 ## Run
 
-La aplicación y el orquestador son procesos separados. La funcionalidad DSPL forma parte del build normal y usa la autenticación habitual de VariaMos; no instala usuarios ni proyectos de demostración.
+The application and orchestrator are separate processes. SPL functionality is part of the normal build and uses standard VariaMos authentication; it installs neither users nor demonstration projects.
 
 ```bash
-# terminal 1: API DSPL local
-npm run start:dspl
+# terminal 1: local SPL API
+npm run start:spl
 
-# terminal 2: aplicación VariaMos normal
+# terminal 2: normal VariaMos application
 npm start
 ```
 
-Abre `http://localhost:3000` (no `127.0.0.1`). Si el puerto 3000 está ocupado, el comando termina con un mensaje explícito para evitar abrir accidentalmente otra instancia en 3001. La pantalla de inicio de sesión pertenece a VariaMos y vuelve a localhost con un token temporal; ese token se retira inmediatamente de la URL y no debe copiarse en modelos ni descriptores.
+Open `http://localhost:3000` (not `127.0.0.1`). If port 3000 is occupied, the command exits with an explicit message to prevent accidentally opening another instance on 3001. The sign-in page belongs to VariaMos and returns to localhost with a temporary token; that token is immediately removed from the URL and must not be copied into models or descriptors.
 
-Al abrir un feature model, la barra **Despliegue DSPL** permite conectar un repositorio Git con `.variamos/dspl.json`, importar sus artefactos, confirmar bindings, planificar, derivar y desplegar. El lenguaje `DSPL Deployment Mapping v1` se distribuye con el frontend; los proyectos del Portal de Eventos siguen siendo fixtures opcionales.
+When a feature model is open, the **SPL Deployment** bar lets the user download a real `.variamos/spl.json` template, validate the adapted file, and choose among three sources: remote Git, authorized local Git, and an authorized local folder without Git. Both Git sources pin a commit; the non-Git folder creates an immutable digest snapshot. After connecting, the flow imports artifacts, confirms bindings, plans, builds, and deploys. The validator shows supported values and compatibility rules; it does not generate technical decisions from features. The canonical `SPL Deployment Mapping v1` language is bundled with the frontend; Event Portal projects remain optional fixtures.
 
-Ver [Incorporación de proyectos externos](docs/dspl/EXTERNAL_PROJECT_ONBOARDING.md) para el contrato, seguridad, API, ejecución y prueba E2E.
+See [External project onboarding](docs/spl/EXTERNAL_PROJECT_ONBOARDING.md) for the contract, security model, API, execution, and E2E test.

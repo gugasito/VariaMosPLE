@@ -1,5 +1,5 @@
-# Proyecto externo de incorporación DSPL
+# External SPL onboarding project
 
-Esta carpeta es una plantilla versionada con VariaMosPLE. Las pruebas la copian a un repositorio Git temporal independiente, crean un commit y conectan ese repositorio mediante la misma API pública que utiliza la interfaz.
+This folder is a template versioned with VariaMosPLE. The tests copy it to an independent temporary Git repository, create a commit, and connect that repository through the same public API used by the interface.
 
-En un proyecto real, el contenido vive en su propio repositorio y sólo necesita versionar `.variamos/dspl.json`. La relación entre features y artefactos se confirma posteriormente en VariaMos; este repositorio no intenta deducirla.
+In a real project, the content lives in its own repository and only needs to version `.variamos/spl.json`. The relationship between features and artifacts is confirmed later in VariaMos; this repository does not attempt to infer it.
