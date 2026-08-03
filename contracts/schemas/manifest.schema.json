@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://variamosple.org/schemas/dspl/manifest/v1",
+  "$id": "https://variamosple.org/schemas/spl/manifest/v1",
   "title": "SPL derivation and deployment manifest",
   "description": "An immutable, validated plan that bridges a VariaMos configuration and technical execution.",
   "type": "object",

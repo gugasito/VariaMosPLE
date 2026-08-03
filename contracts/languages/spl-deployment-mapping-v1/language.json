@@ -1,5 +1,5 @@
 {
-  "name": "DSPL Deployment Mapping v1",
+  "name": "SPL Deployment Mapping v1",
   "type": "APPLICATION",
   "stateAccept": "PENDING",
   "abstractSyntax": {

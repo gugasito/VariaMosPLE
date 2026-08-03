@@ -13,7 +13,7 @@ const {
 
 const examplesRoot = path.resolve(__dirname, "..", "examples");
 
-test("el registro normal no instala catálogos ni perfiles de demostración", () => {
+test("the normal registry installs no demonstration catalogs or profiles", () => {
   const registry = loadJson(path.resolve(__dirname, "..", "resource-registry.local.json"));
   assert.deepEqual(registry.catalogs, {});
   assert.deepEqual(registry.profiles, {});
@@ -23,7 +23,7 @@ test("el registro normal no instala catálogos ni perfiles de demostración", ()
   ]);
 });
 
-test("el fixture de regresión Portal de Eventos conserva sus contratos y hashes", () => {
+test("the Event Portal regression fixture preserves its contracts and hashes", () => {
   const { errors, examples } = validateEventPortalExampleSet();
   assert.deepEqual(errors, []);
   assert.equal(examples.catalogs.length, 2);
@@ -31,7 +31,7 @@ test("el fixture de regresión Portal de Eventos conserva sus contratos y hashes
   assert.equal(examples.configurations.length, 3);
 });
 
-test("una configuración sin estado selected es rechazada por el esquema", () => {
+test("the schema rejects a configuration without selected state", () => {
   const ajv = createValidator();
   const invalidConfiguration = loadJson(path.join(
     examplesRoot,
@@ -46,7 +46,7 @@ test("una configuración sin estado selected es rechazada por el esquema", () =>
   assert.match(result.errors.join("\n"), /selected/);
 });
 
-test("un binding a un artefacto inexistente es rechazado por la validación semántica", () => {
+test("semantic validation rejects a binding to a missing artifact", () => {
   const ajv = createValidator();
   const { examples } = validateEventPortalExampleSet();
   const invalidBindings = loadJson(
@@ -69,10 +69,10 @@ test("un binding a un artefacto inexistente es rechazado por la validación sem�
     manifest: { features: [], artifacts: [], target: { id: examples.targets[0].id } },
     target: examples.targets[0],
   });
-  assert.match(errors.join("\n"), /artefacto inexistente/);
+  assert.match(errors.join("\n"), /missing artifact/);
 });
 
-test("variamos-project/v1 acepta un descriptor listo y un borrador con preguntas", () => {
+test("variamos-project/v1 accepts a ready descriptor and a draft with questions", () => {
   const root = path.join(examplesRoot, "variamos-project");
   const ready = validateVariamosProjectDescriptor(loadJson(path.join(root, "valid.static.json")), { requireReady: true });
   const draft = validateVariamosProjectDescriptor(loadJson(path.join(root, "valid.draft.json")));
@@ -80,12 +80,21 @@ test("variamos-project/v1 acepta un descriptor listo y un borrador con preguntas
   assert.deepEqual(draft.errors, []);
 });
 
-test("variamos-project/v1 bloquea traversal, secretos y borradores importados", () => {
+test("the downloadable spl.json template is a real, ready descriptor", () => {
+  const workspaceRoot = path.resolve(__dirname, "../..");
+  const template = loadJson(path.join(workspaceRoot, "public/templates/spl.json"));
+  const realExample = loadJson(path.join(workspaceRoot, "examples/external-project-onboarding/.variamos/spl.json"));
+  const result = validateVariamosProjectDescriptor(template, { requireReady: true });
+  assert.deepEqual(result.errors, []);
+  assert.deepEqual(template, realExample);
+});
+
+test("variamos-project/v1 blocks traversal, secrets, and imported drafts", () => {
   const root = path.join(examplesRoot, "variamos-project");
   const traversal = validateVariamosProjectDescriptor(loadJson(path.join(root, "invalid.path-traversal.json")));
   const secret = validateVariamosProjectDescriptor(loadJson(path.join(root, "invalid.secret.json")));
   const draft = validateVariamosProjectDescriptor(loadJson(path.join(root, "valid.draft.json")), { requireReady: true });
   assert.equal(traversal.valid, false);
   assert.equal(secret.valid, false);
-  assert.match(draft.errors.join("\n"), /status 'ready'/);
+  assert.match(draft.errors.join("\n"), /'ready' status/);
 });

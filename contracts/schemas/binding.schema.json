@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://variamosple.org/schemas/dspl/binding/v1",
-  "title": "DSPL feature-artifact bindings",
+  "$id": "https://variamosple.org/schemas/spl/binding/v1",
+  "title": "SPL feature-artifact bindings",
   "description": "A set of declarative rules that map selected features to artifact actions.",
   "type": "object",
   "additionalProperties": false,

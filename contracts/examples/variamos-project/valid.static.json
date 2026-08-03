@@ -3,13 +3,13 @@
   "status": "ready",
   "project": {
     "id": "external-event-portal",
-    "name": "Portal de Eventos externo",
-    "description": "Proyecto Git independiente que expone artefactos estáticos a VariaMos."
+    "name": "External Event Portal",
+    "description": "Independent Git project that exposes static artifacts to VariaMos."
   },
   "artifacts": [
     {
       "id": "external-event-portal.shell",
-      "label": "Estructura del portal",
+      "label": "Portal shell",
       "kind": "html-fragment",
       "version": "1.0.0",
       "source": { "path": "artifacts/shell.html" },
@@ -25,7 +25,7 @@
     },
     {
       "id": "external-event-portal.registration.ui",
-      "label": "Formulario de inscripción",
+      "label": "Registration form",
       "kind": "html-fragment",
       "version": "1.0.0",
       "source": { "path": "artifacts/registration-form.html" },
@@ -33,7 +33,7 @@
     },
     {
       "id": "external-event-portal.registration.confirmation",
-      "label": "Confirmación de inscripción",
+      "label": "Registration confirmation",
       "kind": "html-fragment",
       "version": "1.0.0",
       "source": { "path": "artifacts/registration-confirmation.html" },
@@ -43,7 +43,7 @@
   "profiles": [
     {
       "id": "external-event-portal.static",
-      "name": "Sitio estático externo",
+      "name": "External static site",
       "builderAdapter": "static-site-v1",
       "testAdapter": "html-validation-v1",
       "artifactIds": [

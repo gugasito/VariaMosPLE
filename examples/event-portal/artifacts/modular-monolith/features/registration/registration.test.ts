@@ -1,3 +1,3 @@
 import assert from "assert";
 
-assert.ok(true, "La prueba de inscripción fue incorporada al producto derivado.");
+assert.ok(true, "The registration test was included in the derived product.");

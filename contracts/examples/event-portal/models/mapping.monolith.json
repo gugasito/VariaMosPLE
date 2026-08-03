@@ -1,10 +1,10 @@
 {
   "id": "event-portal-mapping-monolith",
-  "name": "Portal de Eventos — Mapping monolito",
-  "type": "DSPL Deployment Mapping v1",
+  "name": "Event Portal — Monolith mapping",
+  "type": "SPL Deployment Mapping v1",
   "sourceModelIds": ["event-portal-feature-model"],
   "elements": [
-    { "id": "mapping-root", "type": "DeploymentMapping", "properties": [{ "name": "mapping_schema", "value": "dspl-deployment-mapping/v1" }, { "name": "mapping_ref", "value": "mapping.event-portal.monolith.v1" }, { "name": "catalog_ref", "value": "event-portal.catalog.monolith" }, { "name": "target_ref", "value": "event-portal.target.monolith.local" }] },
+    { "id": "mapping-root", "type": "DeploymentMapping", "properties": [{ "name": "mapping_schema", "value": "spl-deployment-mapping/v1" }, { "name": "mapping_ref", "value": "mapping.event-portal.monolith.v1" }, { "name": "catalog_ref", "value": "event-portal.catalog.monolith" }, { "name": "target_ref", "value": "event-portal.target.monolith.local" }] },
     { "id": "binding-portal", "type": "FeatureBinding", "properties": [{ "name": "source_feature_id", "value": "feature-source-portal" }, { "name": "feature_ref", "value": "feature.event.portal" }] },
     { "id": "binding-agenda", "type": "FeatureBinding", "properties": [{ "name": "source_feature_id", "value": "feature-source-agenda" }, { "name": "feature_ref", "value": "feature.event.agenda" }] },
     { "id": "binding-registration", "type": "FeatureBinding", "properties": [{ "name": "source_feature_id", "value": "feature-source-registration" }, { "name": "feature_ref", "value": "feature.event.registration" }] },

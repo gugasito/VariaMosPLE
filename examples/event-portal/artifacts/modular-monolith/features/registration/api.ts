@@ -6,7 +6,7 @@ export const portalModule: PortalModule = {
   handle: async (request, body) => {
     if (request.url?.split("?")[0] !== "/api/registrations") return undefined;
     const name = typeof body.name === "string" ? body.name.trim() : "";
-    if (!name) return { status: 422, body: { error: "El nombre es obligatorio." } };
+    if (!name) return { status: 422, body: { error: "Name is required." } };
     return { status: 201, body: { registrationId: `registration-${Date.now()}`, name } };
   },
 };

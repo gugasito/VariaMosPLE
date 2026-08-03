@@ -5,7 +5,7 @@ const test = require("node:test");
 
 const assets = path.resolve(__dirname, "../artifacts");
 
-test("el fixture Portal de Eventos contiene activos estáticos y modulares propios", () => {
+test("the Event Portal fixture contains its own static and modular assets", () => {
   assert.ok(fs.existsSync(path.join(assets, "static/agenda.html")));
   assert.ok(fs.existsSync(path.join(assets, "modular-monolith/runtime/server.ts")));
   assert.ok(fs.existsSync(path.join(assets, "modular-monolith/features/registration/api.ts")));

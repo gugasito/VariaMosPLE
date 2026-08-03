@@ -2,7 +2,7 @@
   "name": "@variamosple/event-portal-fixture",
   "version": "1.0.0",
   "private": true,
-  "description": "Demostrador clean-room para la derivación DSPL del Portal de Eventos.",
+  "description": "Clean-room demonstrator for SPL derivation of the Event Portal.",
   "scripts": {
     "typecheck": "tsc --noEmit",
     "test": "node --test tests/*.test.cjs"

@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://variamosple.org/schemas/dspl/configuration/v1",
-  "title": "DSPL product configuration",
+  "$id": "https://variamosple.org/schemas/spl/configuration/v1",
+  "title": "SPL product configuration",
   "description": "A feature selection produced from one version of a VariaMos model.",
   "type": "object",
   "additionalProperties": false,

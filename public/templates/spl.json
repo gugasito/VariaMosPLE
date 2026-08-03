@@ -1,0 +1,142 @@
+{
+  "schemaVersion": "variamos-project/v1",
+  "status": "ready",
+  "project": {
+    "id": "external-event-portal",
+    "name": "External Event Portal",
+    "description": "Standalone application prepared for onboarding through the VariaMos contract."
+  },
+  "artifacts": [
+    {
+      "id": "external-event-portal.shell",
+      "label": "Shell",
+      "description": "Base structure and presentation shared by every portal variant.",
+      "kind": "html-fragment",
+      "version": "1.0.0",
+      "source": {
+        "path": "artifacts/shell.html"
+      },
+      "requiresCapabilities": [
+        "static-http"
+      ]
+    },
+    {
+      "id": "external-event-portal.agenda",
+      "label": "Agenda",
+      "description": "Section containing the event schedule and times.",
+      "kind": "html-fragment",
+      "version": "1.0.0",
+      "source": {
+        "path": "artifacts/agenda.html"
+      },
+      "dependsOn": [
+        "external-event-portal.shell"
+      ],
+      "requiresCapabilities": [
+        "static-http"
+      ]
+    },
+    {
+      "id": "external-event-portal.registration.ui",
+      "label": "Registration form",
+      "description": "Interface used to register a person for the event.",
+      "kind": "html-fragment",
+      "version": "1.0.0",
+      "source": {
+        "path": "artifacts/registration-form.html"
+      },
+      "dependsOn": [
+        "external-event-portal.shell"
+      ],
+      "requiresCapabilities": [
+        "static-http"
+      ]
+    },
+    {
+      "id": "external-event-portal.registration.confirmation",
+      "label": "Registration confirmation",
+      "description": "Visual confirmation shown after completing the registration form.",
+      "kind": "html-fragment",
+      "version": "1.0.0",
+      "source": {
+        "path": "artifacts/registration-confirmation.html"
+      },
+      "dependsOn": [
+        "external-event-portal.registration.ui"
+      ],
+      "requiresCapabilities": [
+        "static-http"
+      ]
+    },
+    {
+      "id": "external-event-portal.notifications",
+      "label": "Notifications",
+      "description": "Optional block for event notices and updates.",
+      "kind": "html-fragment",
+      "version": "1.0.0",
+      "source": {
+        "path": "artifacts/notifications.html"
+      },
+      "dependsOn": [
+        "external-event-portal.shell"
+      ],
+      "requiresCapabilities": [
+        "static-http"
+      ]
+    },
+    {
+      "id": "external-event-portal.presential",
+      "label": "In-person mode",
+      "description": "Information specific to an in-person attendance variant.",
+      "kind": "html-fragment",
+      "version": "1.0.0",
+      "source": {
+        "path": "artifacts/presential.html"
+      },
+      "dependsOn": [
+        "external-event-portal.shell"
+      ],
+      "requiresCapabilities": [
+        "static-http"
+      ]
+    },
+    {
+      "id": "external-event-portal.venue-map",
+      "label": "Venue map",
+      "description": "Venue location for in-person variants.",
+      "kind": "html-fragment",
+      "version": "1.0.0",
+      "source": {
+        "path": "artifacts/venue-map.html"
+      },
+      "dependsOn": [
+        "external-event-portal.presential"
+      ],
+      "requiresCapabilities": [
+        "static-http"
+      ]
+    }
+  ],
+  "profiles": [
+    {
+      "id": "external-event-portal.static",
+      "name": "External static site",
+      "builderAdapter": "static-site-v1",
+      "testAdapter": "html-validation-v1",
+      "artifactIds": [
+        "external-event-portal.shell",
+        "external-event-portal.agenda",
+        "external-event-portal.registration.ui",
+        "external-event-portal.registration.confirmation",
+        "external-event-portal.notifications",
+        "external-event-portal.presential",
+        "external-event-portal.venue-map"
+      ],
+      "requiredTargetCapabilities": [
+        "docker",
+        "static-http",
+        "single-container"
+      ]
+    }
+  ]
+}

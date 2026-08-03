@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://variamosple.org/schemas/dspl/artifact/v1",
-  "title": "DSPL software artifact",
+  "$id": "https://variamosple.org/schemas/spl/artifact/v1",
+  "title": "SPL software artifact",
   "description": "A versioned technical asset that can participate in a derived product.",
   "type": "object",
   "additionalProperties": false,

@@ -1,5 +1,5 @@
-// Este archivo permite validar los activos fuente. El builder DSPL lo reemplaza
-// determinísticamente con los módulos seleccionados antes de transpilar el producto.
+// This file supports source-asset validation. The SPL builder deterministically
+// replaces it with the selected modules before transpiling the product.
 import { PortalModule } from "../types";
 
 export const enabledFeatures: readonly string[] = [];

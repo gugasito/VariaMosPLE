@@ -9,31 +9,31 @@ const eventPortalRoot = path.join(contractsRoot, "examples", "event-portal");
 
 const schemaDefinitions = {
   artifact: {
-    id: "https://variamosple.org/schemas/dspl/artifact/v1",
+    id: "https://variamosple.org/schemas/spl/artifact/v1",
     file: "artifact.schema.json",
   },
   catalog: {
-    id: "https://variamosple.org/schemas/dspl/catalog/v1",
+    id: "https://variamosple.org/schemas/spl/catalog/v1",
     file: "catalog.schema.json",
   },
   binding: {
-    id: "https://variamosple.org/schemas/dspl/binding/v1",
+    id: "https://variamosple.org/schemas/spl/binding/v1",
     file: "binding.schema.json",
   },
   configuration: {
-    id: "https://variamosple.org/schemas/dspl/configuration/v1",
+    id: "https://variamosple.org/schemas/spl/configuration/v1",
     file: "configuration.schema.json",
   },
   target: {
-    id: "https://variamosple.org/schemas/dspl/target/v1",
+    id: "https://variamosple.org/schemas/spl/target/v1",
     file: "target.schema.json",
   },
   manifest: {
-    id: "https://variamosple.org/schemas/dspl/manifest/v1",
+    id: "https://variamosple.org/schemas/spl/manifest/v1",
     file: "manifest.schema.json",
   },
   variamosProject: {
-    id: "https://variamosple.org/schemas/dspl/variamos-project/v1",
+    id: "https://variamosple.org/schemas/spl/variamos-project/v1",
     file: "variamos-project.schema.json",
   },
 };
@@ -68,7 +68,7 @@ function validateDocument(ajv, schemaName, document) {
   const validator = ajv.getSchema(definition.id);
 
   if (!validator) {
-    throw new Error(`No se encontró el esquema ${schemaName}.`);
+    throw new Error(`Schema ${schemaName} was not found.`);
   }
 
   const valid = validator(document);
@@ -84,7 +84,7 @@ function distinctIds(items, scope) {
 
   items.forEach((item) => {
     if (ids.has(item.id)) {
-      errors.push(`${scope}: el id '${item.id}' está duplicado.`);
+      errors.push(`${scope}: ID '${item.id}' is duplicated.`);
     }
     ids.add(item.id);
   });
@@ -103,13 +103,13 @@ function validateCrossReferences({ catalog, bindings, configuration, manifest, t
 
   bindings.bindings.forEach((binding) => {
     if (bindingByFeatureId.has(binding.featureId)) {
-      errors.push(`bindings.bindings: la feature '${binding.featureId}' tiene más de un binding v1.`);
+      errors.push(`bindings.bindings: feature '${binding.featureId}' has more than one v1 binding.`);
     }
     bindingByFeatureId.set(binding.featureId, binding);
 
     binding.actions.forEach((action) => {
       if (action.artifactId && !artifactById.has(action.artifactId)) {
-        errors.push(`binding '${binding.id}' referencia el artefacto inexistente '${action.artifactId}'.`);
+        errors.push(`binding '${binding.id}' references missing artifact '${action.artifactId}'.`);
       }
     });
   });
@@ -118,7 +118,7 @@ function validateCrossReferences({ catalog, bindings, configuration, manifest, t
     .filter((selection) => selection.selected)
     .forEach((selection) => {
       if (!bindingByFeatureId.has(selection.featureId)) {
-        errors.push(`configuration: la feature seleccionada '${selection.featureId}' no tiene binding.`);
+        errors.push(`configuration: selected feature '${selection.featureId}' has no binding.`);
       }
     });
 
@@ -127,26 +127,26 @@ function validateCrossReferences({ catalog, bindings, configuration, manifest, t
     .forEach((feature) => {
       const selection = configuration.selections.find((item) => item.featureId === feature.id);
       if (!selection || !selection.selected) {
-        errors.push(`manifest: la feature seleccionada '${feature.id}' no coincide con la configuración.`);
+        errors.push(`manifest: selected feature '${feature.id}' does not match the configuration.`);
       }
     });
 
   manifest.artifacts.forEach((artifact) => {
     const catalogArtifact = artifactById.get(artifact.id);
     if (!catalogArtifact) {
-      errors.push(`manifest: el artefacto '${artifact.id}' no existe en el catálogo.`);
+      errors.push(`manifest: artifact '${artifact.id}' does not exist in the catalog.`);
       return;
     }
     if (catalogArtifact.version !== artifact.version) {
-      errors.push(`manifest: la versión de '${artifact.id}' no coincide con el catálogo.`);
+      errors.push(`manifest: version of '${artifact.id}' does not match the catalog.`);
     }
     if (catalogArtifact.integrity.digest !== artifact.digest) {
-      errors.push(`manifest: el digest de '${artifact.id}' no coincide con el catálogo.`);
+      errors.push(`manifest: digest of '${artifact.id}' does not match the catalog.`);
     }
   });
 
   if (manifest.target.id !== target.id) {
-    errors.push(`manifest: el target '${manifest.target.id}' no coincide con '${target.id}'.`);
+    errors.push(`manifest: target '${manifest.target.id}' does not match '${target.id}'.`);
   }
 
   return errors;
@@ -192,7 +192,7 @@ function validateEventPortalExampleSet() {
   ];
   schemaDocuments.forEach(([schemaName, document]) => {
     const result = validateDocument(ajv, schemaName, document);
-    if (!result.valid) errors.push(...result.errors.map((error) => `Portal de Eventos ${schemaName}: ${error}`));
+    if (!result.valid) errors.push(...result.errors.map((error) => `Event Portal ${schemaName}: ${error}`));
   });
 
   const declaredFeatureIds = new Set(Object.values(examples.featureIds.features));
@@ -205,12 +205,12 @@ function validateEventPortalExampleSet() {
     )
   );
   declaredFeatureIds.forEach((featureId) => {
-    if (!mappedFeatureIds.has(featureId)) errors.push(`Portal de Eventos: la feature '${featureId}' falta en los mappings.`);
+    if (!mappedFeatureIds.has(featureId)) errors.push(`Event Portal: feature '${featureId}' is missing from the mappings.`);
   });
   examples.configurations.forEach((configuration) => {
     configuration.selections.forEach((selection) => {
       if (!declaredFeatureIds.has(selection.featureId)) {
-        errors.push(`Portal de Eventos: '${configuration.id}' referencia la feature desconocida '${selection.featureId}'.`);
+        errors.push(`Event Portal: '${configuration.id}' references unknown feature '${selection.featureId}'.`);
       }
     });
   });
@@ -218,29 +218,29 @@ function validateEventPortalExampleSet() {
   const registryRoot = path.dirname(path.join(eventPortalRoot, "registry.local.json"));
   Object.entries(examples.registry.catalogs).forEach(([catalogId, relativePath]) => {
     if (path.isAbsolute(relativePath) || relativePath.split(/[\\/]/).includes("..")) {
-      errors.push(`Portal de Eventos: el catálogo '${catalogId}' tiene una ruta no autorizada.`);
+      errors.push(`Event Portal: catalog '${catalogId}' has an unauthorized path.`);
     }
   });
   const artifactRoot = path.resolve(registryRoot, examples.registry.localRoots["event-portal-assets"]);
   examples.catalogs.forEach((catalog) => {
-    errors.push(...distinctIds(catalog.artifacts, `Portal de Eventos ${catalog.id}.artifacts`));
+    errors.push(...distinctIds(catalog.artifacts, `Event Portal ${catalog.id}.artifacts`));
     catalog.artifacts.forEach((artifact) => {
       const source = artifact.source || {};
       if (source.provider !== "local" || source.location !== "event-portal-assets") {
-        errors.push(`Portal de Eventos: '${artifact.id}' debe usar el provider local versionado.`);
+        errors.push(`Event Portal: '${artifact.id}' must use the versioned local provider.`);
         return;
       }
       if (!source.path || path.isAbsolute(source.path) || source.path.split(/[\\/]/).includes("..")) {
-        errors.push(`Portal de Eventos: '${artifact.id}' tiene una ruta de activo no autorizada.`);
+        errors.push(`Event Portal: '${artifact.id}' has an unauthorized asset path.`);
         return;
       }
       const artifactPath = path.resolve(artifactRoot, source.path);
       if (!artifactPath.startsWith(`${artifactRoot}${path.sep}`) || !fs.existsSync(artifactPath)) {
-        errors.push(`Portal de Eventos: no existe el activo '${artifact.id}'.`);
+        errors.push(`Event Portal: asset '${artifact.id}' does not exist.`);
         return;
       }
       if (digestFile(artifactPath) !== artifact.integrity.digest) {
-        errors.push(`Portal de Eventos: el digest de '${artifact.id}' no coincide con el activo.`);
+        errors.push(`Event Portal: digest of '${artifact.id}' does not match the asset.`);
       }
     });
   });
@@ -249,26 +249,26 @@ function validateEventPortalExampleSet() {
   const targetIds = new Set(examples.targets.map((target) => target.id));
   const mappingRefs = new Set();
   examples.mappings.forEach((mapping) => {
-    if (mapping.type !== "DSPL Deployment Mapping v1") errors.push(`Portal de Eventos: '${mapping.id}' no usa el lenguaje DSPL propio.`);
-    if ((mapping.sourceModelIds || []).join(",") !== examples.featureModel.id) errors.push(`Portal de Eventos: '${mapping.id}' no enlaza su feature model fuente.`);
+    if (mapping.type !== "SPL Deployment Mapping v1") errors.push(`Event Portal: '${mapping.id}' does not use the native SPL language.`);
+    if ((mapping.sourceModelIds || []).join(",") !== examples.featureModel.id) errors.push(`Event Portal: '${mapping.id}' does not link its source feature model.`);
     const root = mapping.elements.find((element) => element.type === "DeploymentMapping");
     const property = (name) => (root?.properties || []).find((candidate) => candidate.name === name)?.value;
     mapping.elements
       .filter((element) => element.type === "FeatureBinding")
       .forEach((element) => {
         const sourceFeatureId = (element.properties || []).find((candidate) => candidate.name === "source_feature_id")?.value;
-        if (!sourceFeatureIds.has(sourceFeatureId)) errors.push(`Portal de Eventos: '${mapping.id}' enlaza una feature fuente inexistente.`);
+        if (!sourceFeatureIds.has(sourceFeatureId)) errors.push(`Event Portal: '${mapping.id}' links a missing source feature.`);
       });
-    if (property("mapping_schema") !== "dspl-deployment-mapping/v1") errors.push(`Portal de Eventos: '${mapping.id}' no declara el schema de mapping v1.`);
-    if (!property("mapping_ref")) errors.push(`Portal de Eventos: '${mapping.id}' no declara mapping_ref.`);
+    if (property("mapping_schema") !== "spl-deployment-mapping/v1") errors.push(`Event Portal: '${mapping.id}' does not declare the v1 mapping schema.`);
+    if (!property("mapping_ref")) errors.push(`Event Portal: '${mapping.id}' does not declare mapping_ref.`);
     else mappingRefs.add(property("mapping_ref"));
-    if (!catalogIds.has(property("catalog_ref"))) errors.push(`Portal de Eventos: '${mapping.id}' referencia un catálogo inválido.`);
-    if (!targetIds.has(property("target_ref"))) errors.push(`Portal de Eventos: '${mapping.id}' referencia un target inválido.`);
+    if (!catalogIds.has(property("catalog_ref"))) errors.push(`Event Portal: '${mapping.id}' references an invalid catalog.`);
+    if (!targetIds.has(property("target_ref"))) errors.push(`Event Portal: '${mapping.id}' references an invalid target.`);
   });
   Object.entries(examples.registry.profiles || {}).forEach(([profileId, profile]) => {
-    if (!mappingRefs.has(profile.mappingRef)) errors.push(`Portal de Eventos: el perfil '${profileId}' referencia un mapping no declarado.`);
-    if (!examples.registry.catalogs[profile.catalogRef] || !catalogIds.has(profile.catalogRef)) errors.push(`Portal de Eventos: el perfil '${profileId}' referencia un catálogo no autorizado.`);
-    if (!examples.registry.targets[profile.targetRef] || !targetIds.has(profile.targetRef)) errors.push(`Portal de Eventos: el perfil '${profileId}' referencia un target no autorizado.`);
+    if (!mappingRefs.has(profile.mappingRef)) errors.push(`Event Portal: profile '${profileId}' references an undeclared mapping.`);
+    if (!examples.registry.catalogs[profile.catalogRef] || !catalogIds.has(profile.catalogRef)) errors.push(`Event Portal: profile '${profileId}' references an unauthorized catalog.`);
+    if (!examples.registry.targets[profile.targetRef] || !targetIds.has(profile.targetRef)) errors.push(`Event Portal: profile '${profileId}' references an unauthorized target.`);
   });
 
   return { errors, examples };
@@ -291,33 +291,33 @@ function validateVariamosProjectDescriptor(document, options = {}) {
 
   const artifactIds = new Set();
   for (const artifact of document.artifacts) {
-    if (artifactIds.has(artifact.id)) errors.push(`artifacts: el id '${artifact.id}' está duplicado.`);
+    if (artifactIds.has(artifact.id)) errors.push(`artifacts: ID '${artifact.id}' is duplicated.`);
     artifactIds.add(artifact.id);
     for (const dependency of artifact.dependsOn || []) {
-      if (dependency === artifact.id) errors.push(`artifact '${artifact.id}' no puede depender de sí mismo.`);
+      if (dependency === artifact.id) errors.push(`artifact '${artifact.id}' cannot depend on itself.`);
     }
   }
   const profileIds = new Set();
   for (const profile of document.profiles) {
-    if (profileIds.has(profile.id)) errors.push(`profiles: el id '${profile.id}' está duplicado.`);
+    if (profileIds.has(profile.id)) errors.push(`profiles: ID '${profile.id}' is duplicated.`);
     profileIds.add(profile.id);
     if (!allowedProjectAdapters.has(profile.builderAdapter)) {
-      errors.push(`profile '${profile.id}' usa el builder no autorizado '${profile.builderAdapter}'.`);
+      errors.push(`profile '${profile.id}' uses unauthorized builder '${profile.builderAdapter}'.`);
     }
     if (profile.testAdapter && !allowedProjectTestAdapters.has(profile.testAdapter)) {
-      errors.push(`profile '${profile.id}' usa el tester no autorizado '${profile.testAdapter}'.`);
+      errors.push(`profile '${profile.id}' uses unauthorized test adapter '${profile.testAdapter}'.`);
     }
     for (const artifactId of profile.artifactIds || []) {
-      if (!artifactIds.has(artifactId)) errors.push(`profile '${profile.id}' referencia el artefacto inexistente '${artifactId}'.`);
+      if (!artifactIds.has(artifactId)) errors.push(`profile '${profile.id}' references missing artifact '${artifactId}'.`);
     }
   }
   for (const artifact of document.artifacts) {
     for (const dependency of artifact.dependsOn || []) {
-      if (!artifactIds.has(dependency)) errors.push(`artifact '${artifact.id}' depende del artefacto inexistente '${dependency}'.`);
+      if (!artifactIds.has(dependency)) errors.push(`artifact '${artifact.id}' depends on missing artifact '${dependency}'.`);
     }
   }
   if (options.requireReady && document.status !== "ready") {
-    errors.push("El descriptor debe tener status 'ready' antes de importarse.");
+    errors.push("The descriptor must have 'ready' status before it can be imported.");
   }
   return { valid: errors.length === 0, errors };
 }
@@ -337,13 +337,17 @@ if (require.main === module) {
   const projectRoot = path.join(contractsRoot, "examples", "variamos-project");
   const readyProject = validateVariamosProjectDescriptor(loadJson(path.join(projectRoot, "valid.static.json")), { requireReady: true });
   const draftProject = validateVariamosProjectDescriptor(loadJson(path.join(projectRoot, "valid.draft.json")));
-  const errors = [...eventPortal.errors, ...readyProject.errors, ...draftProject.errors];
+  const downloadableTemplate = validateVariamosProjectDescriptor(
+    loadJson(path.resolve(contractsRoot, "../public/templates/spl.json")),
+    { requireReady: true }
+  );
+  const errors = [...eventPortal.errors, ...readyProject.errors, ...draftProject.errors, ...downloadableTemplate.errors];
 
   if (errors.length > 0) {
-    console.error("Los contratos DSPL no son válidos:");
+    console.error("The SPL contracts are invalid:");
     errors.forEach((error) => console.error(`- ${error}`));
     process.exitCode = 1;
   } else {
-    console.log("Los contratos DSPL, el fixture Portal de Eventos y variamos-project/v1 son válidos.");
+    console.log("The SPL contracts, Event Portal fixture, and variamos-project/v1 are valid.");
   }
 }

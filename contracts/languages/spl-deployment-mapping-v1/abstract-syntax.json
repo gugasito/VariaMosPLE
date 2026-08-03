@@ -2,7 +2,7 @@
   "elements": {
     "DeploymentMapping": {
       "properties": [
-        { "name": "mapping_schema", "type": "String", "possibleValues": "dspl-deployment-mapping/v1" },
+        { "name": "mapping_schema", "type": "String", "possibleValues": "spl-deployment-mapping/v1" },
         { "name": "mapping_ref", "type": "String" },
         { "name": "catalog_ref", "type": "String" },
         { "name": "target_ref", "type": "String" }

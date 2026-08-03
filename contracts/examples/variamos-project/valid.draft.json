@@ -7,10 +7,10 @@
   "artifactProposals": [
     {
       "featureId": "feature.registration",
-      "label": "Artefacto por definir para Inscripción",
+      "label": "Artifact to define for Registration",
       "questions": [
-        "¿Qué clase de artefacto es?",
-        "¿Cuál es su ruta relativa comprobada?"
+        "What kind of artifact is it?",
+        "What is its verified relative path?"
       ]
     }
   ],
@@ -18,7 +18,7 @@
     {
       "kind": "artifact",
       "featureId": "feature.registration",
-      "question": "¿Qué archivo, módulo o directorio implementa la feature Inscripción?"
+      "question": "Which file, module, or directory implements the Registration feature?"
     }
   ]
 }

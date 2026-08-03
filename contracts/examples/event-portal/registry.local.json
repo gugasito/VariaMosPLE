@@ -1,5 +1,5 @@
 {
-  "schemaVersion": "dspl-resource-registry/v1",
+  "schemaVersion": "spl-resource-registry/v1",
   "catalogs": {
     "event-portal.catalog.static": "catalogs/static.local.json",
     "event-portal.catalog.monolith": "catalogs/monolith.local.json"
@@ -10,13 +10,13 @@
   },
   "profiles": {
     "event-portal.static.local": {
-      "name": "Portal de Eventos — sitio estático",
+      "name": "Event Portal — static site",
       "mappingRef": "mapping.event-portal.static.v1",
       "catalogRef": "event-portal.catalog.static",
       "targetRef": "event-portal.target.static.local"
     },
     "event-portal.monolith.local": {
-      "name": "Portal de Eventos — monolito modular",
+      "name": "Event Portal — modular monolith",
       "mappingRef": "mapping.event-portal.monolith.v1",
       "catalogRef": "event-portal.catalog.monolith",
       "targetRef": "event-portal.target.monolith.local"

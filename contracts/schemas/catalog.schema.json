@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://variamosple.org/schemas/dspl/catalog/v1",
-  "title": "DSPL artifact catalog",
+  "$id": "https://variamosple.org/schemas/spl/catalog/v1",
+  "title": "SPL artifact catalog",
   "description": "A versioned inventory of artifacts available for one software-product-line domain.",
   "type": "object",
   "additionalProperties": false,
@@ -43,7 +43,7 @@
       "type": "array",
       "minItems": 1,
       "items": {
-        "$ref": "https://variamosple.org/schemas/dspl/artifact/v1"
+        "$ref": "https://variamosple.org/schemas/spl/artifact/v1"
       }
     }
   }

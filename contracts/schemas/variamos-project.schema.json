@@ -1,8 +1,8 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://variamosple.org/schemas/dspl/variamos-project/v1",
+  "$id": "https://variamosple.org/schemas/spl/variamos-project/v1",
   "title": "VariaMos external project descriptor",
-  "description": "Descriptor versionado de los artefactos y perfiles técnicos que un proyecto externo expone a VariaMos.",
+  "description": "Versioned descriptor of the artifacts and technical profiles an external project exposes to VariaMos.",
   "type": "object",
   "additionalProperties": false,
   "required": ["schemaVersion", "status", "project", "artifacts", "profiles"],
@@ -28,7 +28,7 @@
       "items": { "$ref": "#/$defs/profile" }
     },
     "artifactProposals": {
-      "description": "Sugerencias no ejecutables derivadas del feature model. No sustituyen un artefacto listo ni contienen rutas inferidas.",
+      "description": "Non-executable suggestions derived from the feature model. They neither replace a ready artifact nor contain inferred paths.",
       "type": "array",
       "items": { "$ref": "#/$defs/artifactProposal" }
     },

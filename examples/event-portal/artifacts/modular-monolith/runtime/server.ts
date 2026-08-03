@@ -3,8 +3,8 @@ import http, { IncomingMessage, ServerResponse } from "http";
 import path from "path";
 import { enabledFeatures, portalModules } from "./generated/registry";
 
-const manifestId = process.env.DSPL_MANIFEST_ID || "unknown-manifest";
-const dataDirectory = process.env.DSPL_DATA_DIRECTORY || "/data";
+const manifestId = process.env.SPL_MANIFEST_ID || "unknown-manifest";
+const dataDirectory = process.env.SPL_DATA_DIRECTORY || "/data";
 const port = Number(process.env.PORT || "3000");
 
 function send(response: ServerResponse, status: number, body: Record<string, unknown>): void {
@@ -19,7 +19,7 @@ function readBody(request: IncomingMessage): Promise<Record<string, unknown>> {
     request.on("data", (chunk: string) => {
       raw += chunk;
       if (raw.length > 32 * 1024) {
-        reject(new Error("Payload demasiado grande."));
+        reject(new Error("Payload is too large."));
         request.destroy();
       }
     });
@@ -27,7 +27,7 @@ function readBody(request: IncomingMessage): Promise<Record<string, unknown>> {
       try {
         resolve(raw ? JSON.parse(raw) : {});
       } catch (_error) {
-        reject(new Error("JSON inválido."));
+        reject(new Error("Invalid JSON."));
       }
     });
     request.on("error", reject);
@@ -55,7 +55,7 @@ const server = http.createServer(async (request, response) => {
   if (method === "GET" && url.pathname === "/") {
     const sections = portalModules.map((module) => module.render()).join("\n");
     response.writeHead(200, { "content-type": "text/html; charset=utf-8" });
-    response.end(`<!doctype html><html lang="es"><body><main><h1>Portal de Eventos</h1><p data-manifest-id="${manifestId}">Monolito modular derivado.</p>${sections}</main></body></html>`);
+    response.end(`<!doctype html><html lang="en"><body><main><h1>Event Portal</h1><p data-manifest-id="${manifestId}">Derived modular monolith.</p>${sections}</main></body></html>`);
     return;
   }
   if (method === "POST") {
@@ -70,11 +70,11 @@ const server = http.createServer(async (request, response) => {
         }
       }
     } catch (error) {
-      send(response, 400, { error: error instanceof Error ? error.message : "Solicitud inválida." });
+      send(response, 400, { error: error instanceof Error ? error.message : "Invalid request." });
       return;
     }
   }
-  send(response, 404, { error: "Ruta no habilitada para esta configuración." });
+  send(response, 404, { error: "Route is not enabled for this configuration." });
 });
 
-server.listen(port, "0.0.0.0", () => console.log(`Portal de Eventos listo en ${port}`));
+server.listen(port, "0.0.0.0", () => console.log(`Event Portal ready on ${port}`));

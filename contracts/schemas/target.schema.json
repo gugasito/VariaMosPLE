@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://variamosple.org/schemas/dspl/target/v1",
-  "title": "DSPL deployment target",
+  "$id": "https://variamosple.org/schemas/spl/target/v1",
+  "title": "SPL deployment target",
   "description": "A target declaration that contains capabilities and secret references but never secret values.",
   "type": "object",
   "additionalProperties": false,

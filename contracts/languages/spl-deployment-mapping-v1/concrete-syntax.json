@@ -5,8 +5,8 @@
     "SoftwareArtifact": { "design": "shape=rectangle;rounded=1;fillColor=#ffedd5;strokeColor=#c2410c;", "label_property": "artifact_ref", "width": 200, "height": 70, "resizable": "true" }
   },
   "relationships": {
-    "ContainsBinding": { "styles": [{ "style": "strokeColor=#64748b;dashed=1;endArrow=open;" }], "label_fixed": "contiene" },
-    "ContainsArtifact": { "styles": [{ "style": "strokeColor=#64748b;dashed=1;endArrow=open;" }], "label_fixed": "contiene" },
+    "ContainsBinding": { "styles": [{ "style": "strokeColor=#64748b;dashed=1;endArrow=open;" }], "label_fixed": "contains" },
+    "ContainsArtifact": { "styles": [{ "style": "strokeColor=#64748b;dashed=1;endArrow=open;" }], "label_fixed": "contains" },
     "ImplementedBy": { "styles": [{ "style": "strokeColor=#2563eb;strokeWidth=2;endArrow=block;" }], "label_fixed": "implementa" }
   }
 }

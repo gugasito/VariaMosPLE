@@ -1,13 +1,13 @@
-/* E2E real del onboarding externo. Crea un repositorio Git independiente en
- * /tmp, lo conecta por la API, importa el descriptor y despliega en Docker
- * sobre un puerto loopback efímero. */
+/* Real external-onboarding E2E. Creates an independent Git repository under
+ * /tmp, connects it through the API, imports the descriptor, and deploys it
+ * with Docker on an ephemeral loopback port. */
 const { execFileSync } = require("node:child_process");
 const fs = require("node:fs");
 const http = require("node:http");
 const os = require("node:os");
 const path = require("node:path");
 
-const { createDsplHttpHandler } = require("../../services/dspl-orchestrator/dist/DsplHttpServer.js");
+const { createSplHttpHandler } = require("../../services/spl-orchestrator/dist/SplHttpServer.js");
 const workspaceRoot = path.resolve(__dirname, "../..");
 const templateRoot = path.join(workspaceRoot, "examples/external-project-onboarding");
 const featureModelPath = path.join(workspaceRoot, "contracts/examples/event-portal/models/feature-model.json");
@@ -39,8 +39,8 @@ function createRepository(root) {
   const repositoryPath = path.join(root, "external-event-portal");
   fs.cpSync(templateRoot, repositoryPath, { recursive: true });
   execFileSync("git", ["init", "-b", "main", repositoryPath]);
-  execFileSync("git", ["-C", repositoryPath, "config", "user.email", "dspl-e2e@variamos.local"]);
-  execFileSync("git", ["-C", repositoryPath, "config", "user.name", "VariaMos DSPL E2E"]);
+  execFileSync("git", ["-C", repositoryPath, "config", "user.email", "spl-e2e@variamos.local"]);
+  execFileSync("git", ["-C", repositoryPath, "config", "user.name", "VariaMos SPL E2E"]);
   execFileSync("git", ["-C", repositoryPath, "add", "."]);
   execFileSync("git", ["-C", repositoryPath, "commit", "-m", "external project e2e"]);
   return repositoryPath;
@@ -61,7 +61,7 @@ function mappingFor(featureModel, profile) {
   const root = {
     id: "external-mapping-root", type: "DeploymentMapping", name: profile.name,
     properties: [
-      { name: "mapping_schema", value: "dspl-deployment-mapping/v1" },
+      { name: "mapping_schema", value: "spl-deployment-mapping/v1" },
       { name: "mapping_ref", value: profile.mappingRef },
       { name: "catalog_ref", value: profile.catalogRef },
       { name: "target_ref", value: profile.targetRef },
@@ -87,7 +87,7 @@ function mappingFor(featureModel, profile) {
     }));
   });
   return {
-    id: "external-project-mapping", type: "DSPL Deployment Mapping v1", name: "Mapping externo",
+    id: "external-project-mapping", type: "SPL Deployment Mapping v1", name: "External mapping",
     sourceModelIds: [featureModel.id], elements: [root, ...bindings, ...artifacts], relationships,
   };
 }
@@ -100,7 +100,7 @@ function mappingFor(featureModel, profile) {
   fs.copyFileSync(path.join(workspaceRoot, "contracts/targets", targetFile), path.join(temporaryRoot, targetFile));
   const registryPath = path.join(temporaryRoot, "resource-registry.json");
   fs.writeFileSync(registryPath, `${JSON.stringify({
-    schemaVersion: "dspl-resource-registry/v1",
+    schemaVersion: "spl-resource-registry/v1",
     catalogs: {},
     targets: {
       "variamos.target.docker.static.local": {
@@ -111,7 +111,7 @@ function mappingFor(featureModel, profile) {
     },
     profiles: {},
   }, null, 2)}\n`);
-  const server = http.createServer(createDsplHttpHandler({
+  const server = http.createServer(createSplHttpHandler({
     gitRepositories: {},
     outputRoot: path.join(temporaryRoot, "products"),
     releaseStateDirectory: path.join(temporaryRoot, "releases"),
@@ -131,22 +131,22 @@ function mappingFor(featureModel, profile) {
     const base = `http://127.0.0.1:${apiPort}`;
     const connectionInput = {
       id: "external-event-portal", provider: "git", repositoryUrl: repositoryPath,
-      requestedRef: "main", descriptorPath: ".variamos/dspl.json",
+      requestedRef: "main", descriptorPath: ".variamos/spl.json",
     };
-    const preview = await request(base, "/api/dspl/v1/connections/validate", connectionInput);
-    const connection = await request(base, "/api/dspl/v1/connections", {
+    const preview = await request(base, "/api/spl/v1/connections/validate", connectionInput);
+    const connection = await request(base, "/api/spl/v1/connections", {
       ...connectionInput,
       expectedResolvedCommit: preview.connection.resolvedCommit,
       expectedDescriptorDigest: preview.connection.descriptorDigest,
     });
-    const profile = await request(base, "/api/dspl/v1/imports", {
+    const profile = await request(base, "/api/spl/v1/imports", {
       connectionId: connectionInput.id,
       profileId: "external-event-portal.static",
       targetRef: "variamos.target.docker.static.local",
     });
     const featureModel = JSON.parse(fs.readFileSync(featureModelPath, "utf8"));
     const mappingModel = mappingFor(featureModel, profile);
-    const derivation = async (action, expectedPlanDigest) => request(base, "/api/dspl/v1/derivations", {
+    const derivation = async (action, expectedPlanDigest) => request(base, "/api/spl/v1/derivations", {
       action, projectId: "external-event-project", productLineId: "external-event-portal",
       featureModel, mappingModel, expectedPlanDigest,
     });
@@ -156,8 +156,8 @@ function mappingFor(featureModel, profile) {
     const deploy = await derivation("deploy", plan.planDigest);
     const product = await fetch(deploy.deployment.url);
     const html = await product.text();
-    if (!product.ok || !html.includes("Agenda") || !html.includes("Inscripción")) {
-      throw new Error("La release externa no contiene las capacidades aprobadas.");
+    if (!product.ok || !html.includes("Agenda") || !html.includes("Registration")) {
+      throw new Error("The external release does not contain the approved capabilities.");
     }
     console.log(JSON.stringify({
       status: "passed",
@@ -172,7 +172,7 @@ function mappingFor(featureModel, profile) {
   } finally {
     await new Promise((resolve) => server.close(resolve));
     if (manifestId) {
-      const containers = execFileSync("docker", ["ps", "-aq", "--filter", `label=variamos.dspl.manifest-id=${manifestId}`], { encoding: "utf8" }).trim().split("\n").filter(Boolean);
+      const containers = execFileSync("docker", ["ps", "-aq", "--filter", `label=variamos.spl.manifest-id=${manifestId}`], { encoding: "utf8" }).trim().split("\n").filter(Boolean);
       if (containers.length) execFileSync("docker", ["rm", "-f", ...containers], { stdio: "ignore" });
     }
     fs.rmSync(temporaryRoot, { recursive: true, force: true });
