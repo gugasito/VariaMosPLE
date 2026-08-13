@@ -3,7 +3,14 @@ import Button from "react-bootstrap/Button";
 import Modal from "react-bootstrap/Modal";
 import ProjectService from "../../Application/Project/ProjectService";
 import { Model } from "../../Domain/ProductLineEngineering/Entities/Model";
-import { applyBindingAssignments, isSplMappingLanguage, SplProfileSummary, synchronizeSplMapping } from "../../Application/SPL/SplMappingFactory";
+import {
+  applyBindingAssignments,
+  isSplMappingLanguage,
+  SPL_MAPPING_MODEL_NAME,
+  SPL_MAPPING_SHORT_NAME,
+  SplProfileSummary,
+  synchronizeSplMapping,
+} from "../../Application/SPL/SplMappingFactory";
 import { getSplOrchestratorErrorMessage, getSplProfiles } from "../../DataProvider/Services/splOrchestratorService";
 
 interface Props { projectService: ProjectService; featureModel: Model; mappingModel?: Model; onCreated?: (model: Model) => void; }
@@ -31,25 +38,65 @@ export default function SplMappingAssistant({ projectService, featureModel, mapp
   const [open, setOpen] = useState(false);
   const [assignments, setAssignments] = useState<Record<string, string[]>>({});
   const [error, setError] = useState("");
+  const [baseFeatureName, setBaseFeatureName] = useState("Sitio comunitario");
+  const [featureRevision, setFeatureRevision] = useState(0);
   const profile = profiles.find((candidate) => candidate.id === profileId);
-  const features = useMemo(() => featureModel.elements.filter((element) => element.properties?.some((property) => property.name === "Selected")), [featureModel]);
+  const features = useMemo(
+    () => featureModel.elements.filter((element) =>
+      element.properties?.some((property) => property.name === "Selected")
+    ),
+    [featureModel, featureRevision]
+  );
 
   useEffect(() => {
     if (!open) return;
     setError("");
     setAssignments(assignmentsFrom(mappingModel));
-    getSplProfiles().then((items) => {
+    const projectId = projectService.getProject()?.id;
+    if (!projectId) {
+      setError("Open a saved project before requesting deployment profiles.");
+      return;
+    }
+    getSplProfiles(projectId).then((items) => {
       setProfiles(items);
       const preferred = items.find((item) => item.mappingRef === mappingRef(mappingModel));
       setProfileId(preferred?.id || items[0]?.id || "");
     }).catch((cause) => setError(getSplOrchestratorErrorMessage(cause)));
-  }, [open, mappingModel]);
+  }, [open, mappingModel, projectService]);
 
   const toggle = (featureId: string, artifactId: string) => setAssignments((previous) => {
     const values = new Set(previous[featureId] || []);
     values.has(artifactId) ? values.delete(artifactId) : values.add(artifactId);
     return { ...previous, [featureId]: [...values] };
   });
+
+  const createBaseFeature = () => {
+    const name = baseFeatureName.trim();
+    if (!name) {
+      setError("Enter a name for the base feature.");
+      return;
+    }
+    const fragment = name.toLowerCase()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/(^-|-$)/g, "") || "product";
+    let id = `feature-${fragment}`;
+    let suffix = 2;
+    const existingIds = new Set(featureModel.elements.map((element) => element.id));
+    while (existingIds.has(id)) id = `feature-${fragment}-${suffix++}`;
+    featureModel.elements.push({
+      id,
+      type: "RootFeature",
+      name,
+      x: 120,
+      y: 80,
+      width: 180,
+      height: 70,
+      properties: [{ name: "Selected", value: "Selected" }],
+    } as any);
+    projectService.saveProject();
+    setError("");
+    setFeatureRevision((value) => value + 1);
+  };
 
   const confirm = () => {
     if (!profile) return;
@@ -70,11 +117,11 @@ export default function SplMappingAssistant({ projectService, featureModel, mapp
   };
 
   return <>
-    <Button size="sm" variant="outline-secondary" onClick={() => setOpen(true)}>Configure bindings</Button>
-    <Modal show={open} onHide={() => setOpen(false)} size="xl" centered scrollable aria-label="Configure SPL deployment">
-      <Modal.Header closeButton><Modal.Title>Configure SPL deployment</Modal.Title></Modal.Header>
+    <Button size="sm" variant="outline-secondary" onClick={() => setOpen(true)}>Configure {SPL_MAPPING_SHORT_NAME}</Button>
+    <Modal show={open} onHide={() => setOpen(false)} size="xl" centered scrollable aria-label={`Configure ${SPL_MAPPING_SHORT_NAME}`}>
+      <Modal.Header closeButton><Modal.Title>{SPL_MAPPING_MODEL_NAME}</Modal.Title></Modal.Header>
       <Modal.Body>
-        <p className="text-muted">Choose a profile and confirm which artifacts implement each feature. An artifact is a versioned technical unit—a file, module, configuration, or test—and each feature can use several artifacts.</p>
+        <p className="text-muted">Choose a profile and confirm which artifacts realize each feature. This mapping is used to derive, test, and deploy the product. An artifact is a versioned technical unit—a file, module, configuration, or test—and each feature can use several artifacts.</p>
         {error && <div className="alert alert-danger">{error}</div>}
         <label className="d-block mb-3">Technical profile
           <select aria-label="Technical profile" value={profileId} onChange={(event) => setProfileId(event.target.value)} style={{ display: "block", width: "100%", marginTop: 4 }}>
@@ -88,12 +135,21 @@ export default function SplMappingAssistant({ projectService, featureModel, mapp
             : <><strong>Snapshot:</strong> <code>{profile.provenance.snapshotDigest}</code><br /></>}
           <strong>Descriptor:</strong> <code>{profile.provenance.descriptorPath}</code>
         </div>}
+        {profile && features.length === 0 && <div className="alert alert-warning">
+          <p className="mb-2">This feature model is empty. Create its required root decision before assigning source artifacts.</p>
+          <div className="d-flex flex-wrap align-items-end gap-2">
+            <label>Base feature name
+              <input className="form-control form-control-sm" value={baseFeatureName} onChange={(event) => setBaseFeatureName(event.target.value)} />
+            </label>
+            <Button size="sm" variant="warning" onClick={createBaseFeature}>Create base feature</Button>
+          </div>
+        </div>}
         {profile && <div style={{ overflowX: "auto" }}><table className="table table-sm table-bordered align-middle" style={{ minWidth: 620, fontSize: 12 }}>
           <thead><tr><th>Feature</th>{profile.artifacts.map((artifact) => <th key={artifact.id} title={`${artifact.id} · ${artifact.kind} · ${artifact.version}`}>{artifact.label || artifact.id.split(".").slice(-1)[0]}</th>)}</tr></thead>
           <tbody>{features.map((feature) => <tr key={feature.id}><td>{feature.name}</td>{profile.artifacts.map((artifact) => <td className="text-center" key={artifact.id}><input aria-label={`${feature.name} ${artifact.id}`} type="checkbox" checked={(assignments[feature.id] || []).includes(artifact.id)} onChange={() => toggle(feature.id, artifact.id)} /></td>)}</tr>)}</tbody>
         </table></div>}
       </Modal.Body>
-      <Modal.Footer><Button variant="outline-secondary" onClick={() => setOpen(false)}>Cancel</Button><Button variant="primary" disabled={!profile} onClick={confirm}>{mappingModel ? "Update mapping" : "Create mapping"}</Button></Modal.Footer>
+      <Modal.Footer><Button variant="outline-secondary" onClick={() => setOpen(false)}>Cancel</Button><Button variant="primary" disabled={!profile} onClick={confirm}>{mappingModel ? `Update ${SPL_MAPPING_SHORT_NAME}` : `Create ${SPL_MAPPING_SHORT_NAME}`}</Button></Modal.Footer>
     </Modal>
   </>;
 }

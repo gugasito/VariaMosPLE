@@ -1,4 +1,4 @@
-import React, { ChangeEvent, useState } from "react";
+import React, { ChangeEvent, useRef, useState } from "react";
 import * as alertify from "alertifyjs";
 import Button from "react-bootstrap/Button";
 import Modal from "react-bootstrap/Modal";
@@ -11,18 +11,26 @@ import {
   SplProjectConnectionResult,
   SplProjectSourceId,
   SplProjectSourceOption,
+  SplCredentialBinding,
+  SplRemoteTarget,
+  getSplCredentialBindings,
   getSplProjectSources,
+  getSplRuntimeCapabilities,
+  getSplTargets,
   getSplOrchestratorErrorMessage,
   importSplProject,
   saveSplProjectConnection,
+  uploadSplProjectFolder,
   validateSplDescriptor,
   validateSplProjectConnection,
 } from "../../DataProvider/Services/splOrchestratorService";
+import SplTargetManager from "./SplTargetManager";
 
 interface Props {
   projectService: ProjectService;
   featureModel: Model;
   onImported?: (mapping: Model) => void;
+  onTargetsChanged?: () => void;
 }
 
 type Mode = "connect" | "descriptor" | null;
@@ -31,9 +39,9 @@ interface ConnectionDraft {
   id: string;
   repositoryUrl: string;
   requestedRef: string;
-  rootPath: string;
   descriptorPath: string;
   credentialRef: string;
+  sshHostKeyFingerprint: string;
 }
 
 const DESCRIPTOR_TEMPLATE_URL = `${process.env.PUBLIC_URL || ""}/templates/spl.json`;
@@ -50,24 +58,14 @@ const DEFAULT_PROJECT_SOURCES: SplProjectSourceOption[] = [
     plannedFields: ["repositoryUrl", "requestedRef", "descriptorPath", "credentialRef"],
   },
   {
-    id: "git-local",
-    provider: "git",
-    name: "Local Git repository",
-    availability: "configuration-required",
+    id: "folder-upload",
+    provider: "upload",
+    name: "Upload project folder",
+    availability: "available",
     descriptorPath: ".variamos/spl.json",
     supportsCredentialRef: false,
-    help: "Absolute Git path accessible to the orchestrator process.",
-    plannedFields: ["repositoryPath", "requestedRef", "descriptorPath"],
-  },
-  {
-    id: "local-directory",
-    provider: "local",
-    name: "Local folder without Git",
-    availability: "configuration-required",
-    descriptorPath: ".variamos/spl.json",
-    supportsCredentialRef: false,
-    help: "Authorized local folder pinned to an immutable content snapshot.",
-    plannedFields: ["authorizedRoot", "descriptorPath", "snapshotPolicy"],
+    help: "Transfers only .variamos/spl.json and its declared artifacts to VariaMos temporarily.",
+    plannedFields: ["uploadId", "snapshotDigest", "descriptorDigest"],
   },
 ];
 
@@ -83,7 +81,7 @@ function suggestedId(value: string): string {
 
 /** Real project onboarding: creates connections in the orchestrator and stores
  * only public catalog and target IDs in the model. */
-export default function SplProjectOnboarding({ projectService, featureModel, onImported }: Props) {
+export default function SplProjectOnboarding({ projectService, featureModel, onImported, onTargetsChanged }: Props) {
   const [mode, setMode] = useState<Mode>(null);
   const [working, setWorking] = useState(false);
   const [error, setError] = useState("");
@@ -91,9 +89,9 @@ export default function SplProjectOnboarding({ projectService, featureModel, onI
     id: suggestedId(featureModel.name || featureModel.id) || "project-connection",
     repositoryUrl: "",
     requestedRef: "main",
-    rootPath: "",
     descriptorPath: ".variamos/spl.json",
     credentialRef: "",
+    sshHostKeyFingerprint: "",
   });
   const [validated, setValidated] = useState<SplProjectConnectionResult | null>(null);
   const [profileId, setProfileId] = useState("");
@@ -103,10 +101,32 @@ export default function SplProjectOnboarding({ projectService, featureModel, onI
   const [selectedSource, setSelectedSource] = useState<SplProjectSourceId>("git-remote");
   const [projectSources, setProjectSources] = useState<SplProjectSourceOption[]>(DEFAULT_PROJECT_SOURCES);
   const [sourceCatalogWarning, setSourceCatalogWarning] = useState("");
+  const [credentialBindings, setCredentialBindings] = useState<SplCredentialBinding[]>([]);
+  const [remoteTargets, setRemoteTargets] = useState<SplRemoteTarget[]>([]);
+  const [localTargetsEnabled, setLocalTargetsEnabled] = useState(false);
+  const [targetRef, setTargetRef] = useState("");
+  const [uploadId, setUploadId] = useState("");
+  const [uploadSummary, setUploadSummary] = useState<{ files: number; bytes: number; expiresAt: string; snapshotDigest: string } | null>(null);
+  const [uploadProgress, setUploadProgress] = useState<number | null>(null);
+  const [selectedFiles, setSelectedFiles] = useState<Array<{ relativePath: string; file: File }>>([]);
+  const uploadAbort = useRef<AbortController | null>(null);
+  const projectId = (projectService as Partial<ProjectService>).getProject?.()?.id || "";
 
   const sourceOption = projectSources.find((item) => item.id === selectedSource)
     || DEFAULT_PROJECT_SOURCES[0];
-  const isGitSource = selectedSource === "git-remote" || selectedSource === "git-local";
+  const isGitSource = selectedSource === "git-remote";
+  const selectedProfile = validated?.descriptor.profiles.find((profile) => profile.id === profileId);
+  const requiredTargetCapabilities = selectedProfile
+    ? new Set([
+      ...selectedProfile.requiredTargetCapabilities,
+      ...validated!.descriptor.artifacts
+        .filter((artifact) => !selectedProfile.artifactIds || selectedProfile.artifactIds.includes(artifact.id))
+        .flatMap((artifact) => artifact.requiresCapabilities || []),
+    ])
+    : new Set<string>();
+  const compatibleRemoteTargets = remoteTargets.filter((target) =>
+    [...requiredTargetCapabilities].every((capability) => target.capabilities.includes(capability))
+  );
 
   const close = () => { if (!working) { setMode(null); setError(""); } };
   const updateConnection = (name: keyof ConnectionDraft, value: string) => {
@@ -117,11 +137,20 @@ export default function SplProjectOnboarding({ projectService, featureModel, onI
   const loadProjectSources = async () => {
     setSourceCatalogWarning("");
     try {
-      const sources = await getSplProjectSources();
+      const [sources, bindings, targets, runtime] = await Promise.all([
+        getSplProjectSources(),
+        projectId ? getSplCredentialBindings(projectId).catch(() => []) : Promise.resolve([]),
+        projectId ? getSplTargets(projectId).catch(() => []) : Promise.resolve([]),
+        getSplRuntimeCapabilities(),
+      ]);
       setProjectSources(DEFAULT_PROJECT_SOURCES.map(
         (fallback) => sources.find((source) => source.id === fallback.id) || fallback
       ));
+      setCredentialBindings(bindings);
+      setRemoteTargets(targets.filter((item) => item.status === "active"));
+      setLocalTargetsEnabled(runtime.localTargetsEnabled);
     } catch (_cause) {
+      setLocalTargetsEnabled(false);
       setSourceCatalogWarning("Provider status could not be retrieved. The built-in source catalog is shown instead.");
     }
   };
@@ -141,22 +170,22 @@ export default function SplProjectOnboarding({ projectService, featureModel, onI
     setConnection((previous) => ({
       ...previous,
       repositoryUrl: "",
-      rootPath: "",
       credentialRef: "",
+      sshHostKeyFingerprint: "",
     }));
   };
 
   const connectionInput = (
     expected?: SplProjectConnectionResult
   ): SplProjectConnectionInput => {
-    if (selectedSource === "local-directory") {
+    if (selectedSource === "folder-upload") {
       return {
         id: connection.id,
-        provider: "local",
-        rootPath: connection.rootPath,
+        projectId,
+        provider: "upload",
+        uploadId,
         descriptorPath: connection.descriptorPath,
-        snapshotPolicy: "content-digest-v1",
-        ...(expected?.connection.provider === "local"
+        ...(expected?.connection.provider === "upload"
           ? {
             expectedSnapshotDigest: expected.connection.snapshotDigest,
             expectedDescriptorDigest: expected.connection.descriptorDigest,
@@ -166,12 +195,15 @@ export default function SplProjectOnboarding({ projectService, featureModel, onI
     }
     return {
       id: connection.id,
+      projectId,
       provider: "git",
       repositoryUrl: connection.repositoryUrl,
       requestedRef: connection.requestedRef,
       descriptorPath: connection.descriptorPath,
-      credentialRef: selectedSource === "git-remote"
-        ? connection.credentialRef.trim() || undefined
+      credentialRef: connection.credentialRef.trim() || undefined,
+      sshHostKeyFingerprint:
+        (/^git@/.test(connection.repositoryUrl) || /^ssh:\/\//.test(connection.repositoryUrl))
+        ? connection.sshHostKeyFingerprint.trim() || undefined
         : undefined,
       ...(expected?.connection.provider === "git"
         ? {
@@ -188,11 +220,47 @@ export default function SplProjectOnboarding({ projectService, featureModel, onI
       const result = await validateSplProjectConnection(connectionInput());
       setValidated(result);
       setProfileId(result.descriptor.profiles[0]?.id || "");
+      setTargetRef("");
       alertify.success(result.connection.provider === "git"
         ? "Connection and descriptor validated against an immutable commit."
-        : "Connection and descriptor validated against an immutable snapshot.");
+        : "Folder upload and descriptor validated against an immutable snapshot.");
     } catch (cause) { setError(getSplOrchestratorErrorMessage(cause)); }
     finally { setWorking(false); }
+  };
+
+  const selectFolder = async (event: ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(event.target.files || []);
+    event.target.value = "";
+    setValidated(null); setUploadId(""); setUploadSummary(null); setSelectedFiles([]); setError("");
+    const normalized = files.map((file) => {
+      const original = (file as File & { webkitRelativePath?: string }).webkitRelativePath || file.name;
+      const components = original.split("/");
+      return { relativePath: components.length > 1 ? components.slice(1).join("/") : original, file };
+    });
+    const descriptor = normalized.find((entry) => entry.relativePath === ".variamos/spl.json");
+    if (!descriptor) { setError("The selected folder must contain .variamos/spl.json."); return; }
+    try {
+      const parsed = JSON.parse(await descriptor.file.text()) as { artifacts?: Array<{ source?: { path?: string } }> };
+      const paths = new Set([".variamos/spl.json", ...(parsed.artifacts || []).map((artifact) => artifact.source?.path || "")]);
+      const chosen = normalized.filter((entry) => paths.has(entry.relativePath));
+      const missing = [...paths].filter((entry) => !normalized.some((file) => file.relativePath === entry));
+      if (missing.length) { setError(`Declared files are missing: ${missing.join(", ")}`); return; }
+      if (chosen.length !== paths.size) { setError("The descriptor contains duplicate or invalid artifact paths."); return; }
+      setSelectedFiles(chosen);
+    } catch (_error) { setError(".variamos/spl.json must contain valid JSON."); }
+  };
+
+  const uploadFolder = async () => {
+    if (!projectId || !selectedFiles.length) return;
+    setWorking(true); setError(""); setUploadProgress(0);
+    uploadAbort.current = new AbortController();
+    try {
+      const result = await uploadSplProjectFolder(projectId, selectedFiles, setUploadProgress, uploadAbort.current.signal);
+      setUploadId(result.upload.uploadId);
+      setUploadSummary({ files: result.upload.fileCount, bytes: result.upload.totalBytes, expiresAt: result.upload.expiresAt, snapshotDigest: result.upload.snapshotDigest });
+      alertify.success("Project folder uploaded to the VariaMos backend temporarily.");
+    } catch (cause) { setError(getSplOrchestratorErrorMessage(cause)); }
+    finally { uploadAbort.current = null; setUploadProgress(null); setWorking(false); }
   };
 
   const importProject = async () => {
@@ -200,7 +268,12 @@ export default function SplProjectOnboarding({ projectService, featureModel, onI
     setWorking(true); setError("");
     try {
       await saveSplProjectConnection(connectionInput(validated));
-      const profile: SplProfileSummary = await importSplProject(connection.id, profileId);
+      const profile: SplProfileSummary = await importSplProject(
+        connection.id,
+        profileId,
+        projectId,
+        targetRef || undefined
+      );
       const mapping = createSplMapping(featureModel, profile);
       const productLine = projectService.getProductLineSelected();
       productLine.applicationEngineering.models.push(mapping);
@@ -259,7 +332,7 @@ export default function SplProjectOnboarding({ projectService, featureModel, onI
     setWorking(true); setError(""); setDescriptorCheck(null);
     try {
       const candidate: unknown = JSON.parse(descriptorText);
-      const validation = await validateSplDescriptor(candidate, true);
+      const validation = await validateSplDescriptor(candidate, true, projectId || undefined);
       setDescriptorCheck(validation);
       if (validation.valid) alertify.success("The descriptor is valid and ready to connect.");
     } catch (cause) {
@@ -289,6 +362,8 @@ export default function SplProjectOnboarding({ projectService, featureModel, onI
     <div className="d-flex flex-wrap gap-2 mt-2">
       <Button size="sm" variant="outline-primary" onClick={openConnectionTool}>Connect project</Button>
       <Button size="sm" variant="outline-secondary" onClick={openDescriptorTool}>Template and validator</Button>
+      {(projectService as Partial<ProjectService>).getProject &&
+        <SplTargetManager projectService={projectService} onChanged={onTargetsChanged} />}
     </div>
     <Modal show={mode !== null} onHide={close} size="lg" centered scrollable>
       <Modal.Header closeButton>
@@ -297,9 +372,13 @@ export default function SplProjectOnboarding({ projectService, featureModel, onI
       <Modal.Body>
         {mode === "connect" ? <>
           <p>
-            Choose a remote Git repository, a local Git repository, or a local folder without Git.
-            Local sources must be authorized on the orchestrator host.
+            Choose a remote Git repository or upload a project folder from this browser.
+            VariaMos never reads a path from the backend host for uploaded projects.
           </p>
+          {!projectId && <div className="alert alert-warning py-2" role="status">
+            Save or open a VariaMos project first. Authentication and project permissions
+            must be verified before a source can be connected.
+          </div>}
           <fieldset className="mb-3">
             <legend className="h6">Source type</legend>
             <div className="row g-2" role="radiogroup" aria-label="Project source type">
@@ -335,34 +414,23 @@ export default function SplProjectOnboarding({ projectService, featureModel, onI
 
           {isGitSource ? <>
             <div className="alert alert-info py-2">
-              {selectedSource === "git-remote"
-                ? <>The orchestrator will clone the remote repository and pin the branch or tag to an immutable commit.</>
-                : <>The path must point to an existing Git repository on the host running the orchestrator.</>}
+              The VariaMos backend creates a temporary workspace, pins the branch or tag to an immutable commit, and removes that workspace when the operation finishes.
             </div>
-            {selectedSource === "git-local" && sourceOption.availability === "configuration-required" &&
-              <div className="alert alert-warning py-2" role="status">
-                Local Git access is disabled in this orchestrator. The operator must start the service with
-                {" "}<code>SPL_ALLOW_LOCAL_GIT_REPOSITORIES=true</code>.
-              </div>}
             <label className="d-block mb-2">
               Connection ID *
               <input className="form-control" value={connection.id} onChange={(event) => updateConnection("id", event.target.value)} />
             </label>
             <label className="d-block mb-2">
-              {selectedSource === "git-remote" ? "Remote Git repository URL *" : "Absolute local Git repository path *"}
+              Remote Git repository URL *
               <input
                 className="form-control"
-                aria-label={selectedSource === "git-remote" ? "Remote Git repository URL" : "Absolute local Git repository path"}
-                placeholder={selectedSource === "git-remote"
-                  ? "https://git.example.org/team/project.git"
-                  : "/absolute/path/to/project"}
+                aria-label="Remote Git repository URL"
+                placeholder="https://git.example.org/team/project.git"
                 value={connection.repositoryUrl}
                 onChange={(event) => updateConnection("repositoryUrl", event.target.value)}
               />
               <small className="text-muted">
-                {selectedSource === "git-remote"
-                  ? "HTTPS, ssh://, and git@host:organization/repository.git are supported."
-                  : "This is a path on the orchestrator host, not a folder selected in the browser."}
+                HTTPS, ssh://, and git@host:organization/repository.git are supported.
               </small>
             </label>
             <div className="row">
@@ -375,66 +443,87 @@ export default function SplProjectOnboarding({ projectService, featureModel, onI
                 <input className="form-control" value={connection.descriptorPath} onChange={(event) => updateConnection("descriptorPath", event.target.value)} />
               </label>
             </div>
-            {selectedSource === "git-remote" && <label className="d-block mb-2">
-              Credential reference (optional)
-              <input className="form-control" placeholder="secret://git/team-project" value={connection.credentialRef || ""} onChange={(event) => updateConnection("credentialRef", event.target.value)} />
-              <small className="text-muted">Do not paste tokens, passwords, or keys. This field accepts only an opaque reference managed by the orchestrator.</small>
-            </label>}
-            <Button size="sm" disabled={working || !connection.repositoryUrl.trim()} onClick={validateConnection}>
-              {working ? <Spinner animation="border" size="sm" /> : `Validate ${selectedSource === "git-remote" ? "remote" : "local"} repository`}
+            <>
+              <label className="d-block mb-2">
+                Credential reference (optional for public HTTPS)
+                <input
+                  className="form-control"
+                  aria-label="Credential reference"
+                  list="spl-source-credential-bindings"
+                  placeholder="Public repository — no credential"
+                  value={connection.credentialRef || ""}
+                  onChange={(event) => updateConnection("credentialRef", event.target.value)}
+                />
+                <datalist id="spl-source-credential-bindings">
+                  {credentialBindings
+                    .filter((item) => item.status === "active" && item.purpose === "source-read")
+                    .map((item) => <option value={item.ref} key={item.id}>{item.alias} — {item.credentialType}</option>)}
+                </datalist>
+                <small className="text-muted">Only references registered from AWS Secrets Manager appear here. Secret values never enter this form.</small>
+              </label>
+              {(/^git@/.test(connection.repositoryUrl) || /^ssh:\/\//.test(connection.repositoryUrl)) &&
+                <label className="d-block mb-2">
+                  SSH host-key fingerprint *
+                  <input className="form-control" placeholder="SHA256:…" value={connection.sshHostKeyFingerprint} onChange={(event) => updateConnection("sshHostKeyFingerprint", event.target.value)} />
+                  <small className="text-muted">The clone is rejected if the server presents a different host key.</small>
+                </label>}
+            </>
+            <Button size="sm" disabled={working || !projectId || !connection.repositoryUrl.trim()} onClick={validateConnection}>
+              {working ? <Spinner animation="border" size="sm" /> : "Validate remote repository"}
             </Button>
           </> : <>
             <div className="alert alert-info py-2">
-              The orchestrator will copy the descriptor and declared artifacts into a managed snapshot.
-              The snapshot digest prevents later folder changes from altering an already validated import.
+              Select a folder from your computer. VariaMos transfers only <code>.variamos/spl.json</code> and the artifacts declared by it.
+              Git history, <code>node_modules</code>, other files, and secrets are not transferred. The snapshot expires after 24 hours.
             </div>
             {sourceOption.availability === "configuration-required" &&
               <div className="alert alert-warning py-2" role="status">
-                Access to local folders without Git is disabled in this orchestrator. The operator must start the service with
-                {" "}<code>SPL_ALLOW_LOCAL_DIRECTORIES=true</code>.
+                Folder upload is disabled in this VariaMos backend. The operator must enable
+                {" "}<code>SPL_FOLDER_UPLOAD_ENABLED=true</code>.
               </div>}
             <label className="d-block mb-2">
               Connection ID *
               <input className="form-control" value={connection.id} onChange={(event) => updateConnection("id", event.target.value)} />
             </label>
             <label className="d-block mb-2">
-              Absolute path to the local folder without Git *
-              <input
-                className="form-control"
-                aria-label="Absolute path to the local folder without Git"
-                placeholder="/absolute/path/to/project"
-                value={connection.rootPath}
-                onChange={(event) => updateConnection("rootPath", event.target.value)}
-              />
-              <small className="text-muted">
-                This is a path on the orchestrator host. The interface neither transfers files nor browses the host file system.
-              </small>
+              Project folder *
+              <input className="form-control" aria-label="Project folder" type="file" multiple ref={(node) => { if (node) node.setAttribute("webkitdirectory", ""); }} onChange={selectFolder} />
+              <small className="text-muted">Only the declared descriptor and artifacts are selected for upload.</small>
             </label>
-            <div className="row">
-              <label className="col-md-6 mb-2">
-                Descriptor path *
-                <input className="form-control" value={connection.descriptorPath} onChange={(event) => updateConnection("descriptorPath", event.target.value)} />
-              </label>
-              <label className="col-md-6 mb-2">
-                Snapshot policy
-                <input className="form-control" value="Content digest (immutable)" readOnly />
-              </label>
+            {selectedFiles.length > 0 && <div className="small mb-2">Descriptor found; {selectedFiles.length} files selected ({selectedFiles.reduce((total, entry) => total + entry.file.size, 0).toLocaleString()} bytes).</div>}
+            {uploadProgress !== null && <div className="progress mb-2"><div className="progress-bar" style={{ width: `${uploadProgress}%` }}>{uploadProgress}%</div></div>}
+            <div className="d-flex gap-2">
+              <Button size="sm" disabled={working || !projectId || !selectedFiles.length || sourceOption.availability === "configuration-required"} onClick={uploadFolder}>{working ? <Spinner animation="border" size="sm" /> : "Upload project folder"}</Button>
+              {uploadAbort.current && <Button size="sm" variant="outline-secondary" onClick={() => uploadAbort.current?.abort()}>Cancel upload</Button>}
+              {uploadId && <Button size="sm" variant="outline-primary" disabled={working} onClick={validateConnection}>Validate uploaded folder</Button>}
             </div>
-            <Button size="sm" disabled={working || !connection.rootPath.trim()} onClick={validateConnection}>
-              {working ? <Spinner animation="border" size="sm" /> : "Validate local folder"}
-            </Button>
+            {uploadSummary && <div className="alert alert-success py-2 mt-2 mb-0">Uploaded snapshot <code>{uploadSummary.snapshotDigest}</code>. It expires at {new Date(uploadSummary.expiresAt).toLocaleString()}.</div>}
           </>}
 
           {validated && <div className="border rounded p-3 mt-3">
             <div><strong>Source:</strong> {validated.connection.provider === "git"
-              ? (selectedSource === "git-remote" ? "Remote Git" : "Local Git")
-              : "Local folder without Git"}</div>
+              ? "Remote Git"
+              : "Uploaded project folder"}</div>
             {validated.connection.provider === "git"
               ? <div><strong>Pinned commit:</strong> <code>{validated.connection.resolvedCommit}</code></div>
               : <div><strong>Pinned snapshot:</strong> <code>{validated.connection.snapshotDigest}</code></div>}
             <div><strong>Descriptor:</strong> {validated.connection.descriptorPath}</div>
             <div><strong>Artifacts:</strong> {validated.descriptor.artifacts.length}</div>
             <label className="d-block mt-2">Profile to import<select className="form-select" value={profileId} onChange={(event) => setProfileId(event.target.value)}>{validated.descriptor.profiles.map((profile) => <option key={profile.id} value={profile.id}>{profile.name} — {profile.builderAdapter}</option>)}</select></label>
+            <label className="d-block mt-2">Deployment target (optional when importing)
+              <select className="form-select" value={targetRef} onChange={(event) => setTargetRef(event.target.value)}>
+                {localTargetsEnabled && <option value="">Default compatible local target</option>}
+                {!localTargetsEnabled && <option value="" disabled>{compatibleRemoteTargets.length
+                  ? "Select a compatible external target"
+                  : "No compatible external target available"}</option>}
+                {compatibleRemoteTargets.map((item) => <option key={item.id} value={item.id}>
+                    {item.name}{item.environment ? ` — ${item.environment}` : ""} (rev. {item.revision})
+                  </option>)}
+              </select>
+              <small className="text-muted">{localTargetsEnabled
+                ? "The selected target becomes the mapping default. It can be changed before planning without reimporting the catalog."
+                : "You can import without a target. Before the first Plan, select an active compatible external target in SPL Deployment."}</small>
+            </label>
             <details className="mt-2"><summary>Declared artifacts</summary><ul>{validated.descriptor.artifacts.map((artifact) => <li key={artifact.id}><code>{artifact.id}</code> — {artifact.label || artifact.kind} — <code>{artifact.source.path}</code></li>)}</ul></details>
           </div>}
         </> : <>
@@ -537,7 +626,7 @@ export default function SplProjectOnboarding({ projectService, featureModel, onI
       <Modal.Footer>
         <Button variant="outline-secondary" disabled={working} onClick={close}>Close</Button>
         {mode === "connect" &&
-          <Button variant="primary" disabled={working || !validated || !profileId} onClick={importProject}>Import and create mapping</Button>}
+          <Button variant="primary" disabled={working || !projectId || !validated || !profileId} onClick={importProject}>Import and create Feature–Artifact Mapping</Button>}
       </Modal.Footer>
     </Modal>
   </>;

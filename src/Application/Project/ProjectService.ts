@@ -415,7 +415,9 @@ export default class ProjectService {
   }
 
   removeSelectedModelListener(listener: any) {
-    this.selectedModelListeners[listener] = null;
+    this.selectedModelListeners = this.selectedModelListeners.filter(
+      (registeredListener: any) => registeredListener !== listener
+    );
   }
 
   raiseEventSelectedModel(model: Model | undefined) {
@@ -425,7 +427,7 @@ export default class ProjectService {
       let e = new SelectedModelEventArg(me, model);
       for (let index = 0; index < me.selectedModelListeners.length; index++) {
         let callback = this.selectedModelListeners[index];
-        callback(e);
+        if (callback) callback(e);
       }
     }
   }

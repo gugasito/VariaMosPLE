@@ -91,7 +91,7 @@ export default class ModelInformationEditor extends Component<Props, State> {
                       onChange={this.inputSourceModelIds_onChange}
                     />}
                     <small className="form-text text-muted">
-                      {isSplMapping ? "The SPL mapping is linked to exactly one feature model." : "Comma-separated IDs."}
+                      {isSplMapping ? "The Feature–Artifact Mapping is linked to exactly one feature model." : "Comma-separated IDs."}
                     </small>
                   </div>
                 </div>

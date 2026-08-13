@@ -4,7 +4,11 @@ import "@testing-library/jest-dom/extend-expect";
 import SplProjectOnboarding from "./SplProjectOnboarding";
 import {
   SplProjectDescriptor,
+  getSplCredentialBindings,
   getSplProjectSources,
+  getSplRuntimeCapabilities,
+  getSplTargets,
+  uploadSplProjectFolder,
   validateSplDescriptor,
   validateSplProjectConnection,
 } from "../../DataProvider/Services/splOrchestratorService";
@@ -14,9 +18,13 @@ jest.mock("alertifyjs", () => ({ success: jest.fn() }));
 jest.mock("../../DataProvider/Services/splOrchestratorService", () => ({
   getSplOrchestratorErrorMessage: (error: unknown) =>
     error instanceof Error ? error.message : "Error",
+  getSplCredentialBindings: jest.fn().mockResolvedValue([]),
   getSplProjectSources: jest.fn(),
+  getSplRuntimeCapabilities: jest.fn().mockResolvedValue({ localTargetsEnabled: true }),
+  getSplTargets: jest.fn().mockResolvedValue([]),
   importSplProject: jest.fn(),
   saveSplProjectConnection: jest.fn(),
+  uploadSplProjectFolder: jest.fn(),
   validateSplDescriptor: jest.fn(),
   validateSplProjectConnection: jest.fn(),
 }));
@@ -53,31 +61,21 @@ const projectSources = [
     plannedFields: ["repositoryUrl", "requestedRef", "descriptorPath", "credentialRef"],
   },
   {
-    id: "git-local",
-    provider: "git",
-    name: "Local Git repository",
+    id: "folder-upload",
+    provider: "upload",
+    name: "Upload project folder",
     availability: "available",
     descriptorPath: ".variamos/spl.json",
     supportsCredentialRef: false,
-    help: "Git repository on the orchestrator host.",
-    plannedFields: ["repositoryPath", "requestedRef", "descriptorPath"],
-  },
-  {
-    id: "local-directory",
-    provider: "local",
-    name: "Local folder without Git",
-    availability: "available",
-    descriptorPath: ".variamos/spl.json",
-    supportsCredentialRef: false,
-    help: "Authorized folder without Git history.",
-    plannedFields: ["authorizedRoot", "descriptorPath", "snapshotPolicy"],
+    help: "Transfers descriptor and declared artifacts temporarily.",
+    plannedFields: ["uploadId", "snapshotDigest", "descriptorDigest"],
   },
 ] as const;
 
 const renderOnboarding = () =>
   render(
     <SplProjectOnboarding
-      projectService={{} as any}
+      projectService={{ getProject: () => ({ id: "project-test" }) } as any}
       featureModel={{ id: "feature-model", name: "Feature model", elements: [] } as any}
     />
   );
@@ -96,7 +94,9 @@ describe("SplProjectOnboarding descriptor tool", () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
+    (getSplCredentialBindings as jest.Mock).mockResolvedValue([]);
     projectSourcesMock.mockResolvedValue(projectSources as any);
+    (getSplTargets as jest.Mock).mockResolvedValue([]);
     global.fetch = jest.fn().mockResolvedValue({
       ok: true,
       text: async () => `${JSON.stringify(template, null, 2)}\n`,
@@ -135,7 +135,7 @@ describe("SplProjectOnboarding descriptor tool", () => {
     await openDescriptorTool();
     fireEvent.click(screen.getByRole("button", { name: /validate spl\.json/i }));
 
-    await waitFor(() => expect(validateMock).toHaveBeenCalledWith(template, true));
+    await waitFor(() => expect(validateMock).toHaveBeenCalledWith(template, true, "project-test"));
     expect(await screen.findByText(/valid descriptor/i)).toBeVisible();
   });
 
@@ -166,106 +166,71 @@ describe("SplProjectOnboarding descriptor tool", () => {
     expect(validateMock).not.toHaveBeenCalled();
   });
 
-  test("shows only the three supported source types and switches their forms", async () => {
+  test("shows only remote Git and the browser folder upload source", async () => {
     renderOnboarding();
     fireEvent.click(screen.getByRole("button", { name: /connect project/i }));
 
     await waitFor(() => expect(projectSourcesMock).toHaveBeenCalledTimes(1));
     await waitFor(() =>
-      expect(screen.getByRole("radio", { name: /local git repository available/i })).toBeVisible()
+      expect(screen.getByRole("radio", { name: /upload project folder available/i })).toBeVisible()
     );
     expect(screen.getByRole("radio", { name: /remote git repository/i })).toBeChecked();
-    expect(screen.getByRole("radio", { name: /local git repository/i })).toBeVisible();
-    expect(screen.getByRole("radio", { name: /local folder without git/i })).toBeVisible();
+    expect(screen.getByRole("radio", { name: /upload project folder/i })).toBeVisible();
     expect(screen.queryByRole("radio", { name: /http file or catalog/i })).not.toBeInTheDocument();
     expect(screen.queryByRole("radio", { name: /package registry/i })).not.toBeInTheDocument();
     expect(screen.queryByRole("radio", { name: /oci image/i })).not.toBeInTheDocument();
     expect(screen.getByRole("textbox", { name: /remote git repository url/i })).toBeVisible();
-    expect(screen.getByRole("textbox", { name: /credential reference/i })).toBeVisible();
+    expect(screen.getByRole("combobox", { name: /credential reference/i })).toBeVisible();
 
-    fireEvent.click(screen.getByRole("radio", { name: /local git repository/i }));
-    expect(screen.getByRole("textbox", { name: /absolute local git repository path/i })).toBeVisible();
-    expect(screen.queryByRole("textbox", { name: /credential reference/i })).not.toBeInTheDocument();
-
-    fireEvent.click(screen.getByRole("radio", { name: /local folder without git/i }));
-    expect(screen.getByRole("textbox", { name: /absolute path to the local folder without git/i })).toBeVisible();
-    expect(screen.getByDisplayValue(/content digest/i)).toBeVisible();
-    expect(screen.getByRole("button", { name: /import and create mapping/i })).toBeDisabled();
+    fireEvent.click(screen.getByRole("radio", { name: /upload project folder/i }));
+    expect(screen.getByLabelText("Project folder", { exact: true })).toBeVisible();
+    expect(screen.queryByRole("textbox", { name: /remote git repository url/i })).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /import and create feature.artifact mapping/i })).toBeDisabled();
   });
 
-  test("validates a local Git path without sending a credential reference", async () => {
+  test("does not expose a local Git path option", async () => {
+    renderOnboarding();
+    fireEvent.click(screen.getByRole("button", { name: /connect project/i }));
+    await waitFor(() => expect(screen.getByRole("radio", { name: /upload project folder/i })).toBeVisible());
+    expect(screen.queryByText(/local git repository/i)).not.toBeInTheDocument();
+  });
+
+  test("allows importing a validated project before a production target exists", async () => {
+    (getSplRuntimeCapabilities as jest.Mock).mockResolvedValue({ localTargetsEnabled: false });
     validateConnectionMock.mockResolvedValue({
       connection: {
-        id: "feature-model",
+        id: "real-project",
         provider: "git",
-        repositoryUrl: "/workspace/project",
+        repositoryUrl: "https://github.com/example/real-project.git",
         requestedRef: "main",
         descriptorPath: ".variamos/spl.json",
         resolvedCommit: "a".repeat(40),
-        descriptorDigest: `sha256:${"b".repeat(64)}`,
-        validatedAt: "2026-07-25T00:00:00.000Z",
+        descriptorDigest: "sha256:test",
+        validatedAt: "2026-08-12T00:00:00.000Z",
         usesCredentialRef: false,
       },
       descriptor: template,
       validation: { valid: true, errors: [] },
-    });
+    } as any);
     renderOnboarding();
     fireEvent.click(screen.getByRole("button", { name: /connect project/i }));
-    await waitFor(() =>
-      expect(screen.getByRole("radio", { name: /local git repository available/i })).toBeVisible()
-    );
-    fireEvent.click(screen.getByRole("radio", { name: /local git repository/i }));
-    fireEvent.change(screen.getByRole("textbox", { name: /absolute local git repository path/i }), {
-      target: { value: "/workspace/project" },
+    await waitFor(() => expect(screen.getByRole("textbox", { name: /remote git repository url/i })).toBeVisible());
+    fireEvent.change(screen.getByRole("textbox", { name: /remote git repository url/i }), {
+      target: { value: "https://github.com/example/real-project.git" },
     });
-    fireEvent.click(screen.getByRole("button", { name: /validate local repository/i }));
+    fireEvent.click(screen.getByRole("button", { name: /validate remote repository/i }));
 
-    await waitFor(() => expect(validateConnectionMock).toHaveBeenCalledWith(expect.objectContaining({
-      provider: "git",
-      repositoryUrl: "/workspace/project",
-      requestedRef: "main",
-      descriptorPath: ".variamos/spl.json",
-      credentialRef: undefined,
-    })));
-    expect(await screen.findByText(/pinned commit/i)).toBeVisible();
+    await waitFor(() => expect(validateConnectionMock).toHaveBeenCalled());
+    expect(await screen.findByText(/no compatible external target available/i)).toBeVisible();
+    expect(screen.getByRole("button", { name: /import and create feature.artifact mapping/i })).toBeEnabled();
   });
 
-  test("validates a local folder using the immutable content snapshot policy", async () => {
-    validateConnectionMock.mockResolvedValue({
-      connection: {
-        id: "feature-model",
-        provider: "local",
-        rootPath: "/workspace/project",
-        descriptorPath: ".variamos/spl.json",
-        snapshotPolicy: "content-digest-v1",
-        sourceLocation: "external.local.feature-model",
-        snapshotDigest: `sha256:${"a".repeat(64)}`,
-        descriptorDigest: `sha256:${"b".repeat(64)}`,
-        validatedAt: "2026-07-27T00:00:00.000Z",
-        usesCredentialRef: false,
-      },
-      descriptor: template,
-      validation: { valid: true, errors: [] },
-    });
+  test("requires a browser folder selection before uploading", async () => {
     renderOnboarding();
     fireEvent.click(screen.getByRole("button", { name: /connect project/i }));
-    await waitFor(() =>
-      expect(screen.getByRole("radio", { name: /local folder without git available/i })).toBeVisible()
-    );
-    fireEvent.click(screen.getByRole("radio", { name: /local folder without git/i }));
-    fireEvent.change(screen.getByRole("textbox", { name: /absolute path to the local folder without git/i }), {
-      target: { value: "/workspace/project" },
-    });
-    fireEvent.click(screen.getByRole("button", { name: /validate local folder/i }));
-
-    await waitFor(() => expect(validateConnectionMock).toHaveBeenCalledWith({
-      id: "feature-model",
-      provider: "local",
-      rootPath: "/workspace/project",
-      descriptorPath: ".variamos/spl.json",
-      snapshotPolicy: "content-digest-v1",
-    }));
-    expect(await screen.findByText(/pinned snapshot/i)).toBeVisible();
-    expect(screen.getByRole("button", { name: /import and create mapping/i })).toBeEnabled();
+    await waitFor(() => expect(screen.getByRole("radio", { name: /upload project folder/i })).toBeVisible());
+    fireEvent.click(screen.getByRole("radio", { name: /upload project folder/i }));
+    expect(screen.getByLabelText("Project folder", { exact: true })).toHaveAttribute("webkitdirectory");
+    expect(screen.getByRole("button", { name: /^upload project folder$/i })).toBeDisabled();
   });
 });

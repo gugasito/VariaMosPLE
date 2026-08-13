@@ -26,7 +26,17 @@ class ModelRenderer extends Component<ModelRendererProps, ModelRendererState> {
             width: window.innerWidth,
             selectedModel: null
         };
+    }
+
+    componentDidMount() {
         this.props.projectService.addSelectedModelListener(this.updateModel);
+        if (this.props.projectService.currentModel) {
+            this.setState({ selectedModel: this.props.projectService.currentModel });
+        }
+    }
+
+    componentWillUnmount() {
+        this.props.projectService.removeSelectedModelListener(this.updateModel);
     }
 
     updateModel = (e) => {
@@ -102,6 +112,18 @@ if (selectedModel.type === "Feature model UVL") {
 
 
 render() {
+        const fallbackFeatureModel = this.props.projectService.getProject()
+            ?.productLines?.flatMap((productLine) =>
+                productLine.domainEngineering?.models || []
+            ).find((model) =>
+                model.type === "Feature model without attributes" ||
+                model.type === "Feature model with attributes" ||
+                model.type === "Feature model UVL"
+            );
+        const selectedModel =
+            this.state.selectedModel ||
+            this.props.projectService.currentModel ||
+            fallbackFeatureModel;
         return (
             <div className="w-100 h-100">
                 <table>
@@ -110,18 +132,20 @@ render() {
                         <td className="td-treexplorer">
                             <TreeExplorer
                                 projectService={this.props.projectService}
-                                footer={this.state.selectedModel && (
-                                    <SplDerivationPanel
-                                        projectService={this.props.projectService}
-                                        model={this.state.selectedModel}
-                                    />
-                                )}
                             />
                         </td>
                         {this.renderEditor()}
                     </tr>
                     </tbody>
                 </table>
+                {selectedModel && (
+                    <div style={{ position: "fixed", left: 14, right: "auto", bottom: 90, zIndex: 1030, width: 180 }}>
+                        <SplDerivationPanel
+                            projectService={this.props.projectService}
+                            model={selectedModel}
+                        />
+                    </div>
+                )}
                 <FloatingChat projectService={this.props.projectService}/>
             </div>
         )

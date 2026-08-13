@@ -4,6 +4,7 @@ import {
 } from "@variamosple/variamos-components";
 import axios from "axios";
 import { ADMIN_CLIENT } from "../../Infraestructure/AxiosConfig";
+import { clearEphemeralSshPemVault } from "./ephemeralSshPemVault";
 
 export const getSessionInfo = (): Promise<
   ResponseModel<SessionInfoResponse>
@@ -41,6 +42,7 @@ export const getSessionInfo = (): Promise<
 };
 
 export const requestLogout = (): Promise<ResponseModel<void>> => {
+  clearEphemeralSshPemVault();
   return ADMIN_CLIENT.post("/auth/logout")
     .then(() => {})
     .catch((error) => {

@@ -200,6 +200,30 @@ a:hover {
   text-decoration: none;
   color: var(--primary-color-text);
 }
+
+/* The legacy global `a` rule above is intended for the navigation bar. Keep
+   deployment actions readable when they appear in the SPL panel. */
+.spl-deployment-link {
+  display: inline-flex !important;
+  align-items: center;
+  justify-content: center;
+  margin-top: 12px;
+  padding: 8px 12px !important;
+  background-color: #198754 !important;
+  border: 1px solid #146c43 !important;
+  border-radius: 4px;
+  color: #ffffff !important;
+  font-weight: 600;
+  line-height: 1.5;
+  text-decoration: none !important;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+}
+
+.spl-deployment-link:hover,
+.spl-deployment-link:focus {
+  background-color: #146c43 !important;
+  color: #ffffff !important;
+}
 /* ---------------------------- */
 
 /* Variamos icon dark
