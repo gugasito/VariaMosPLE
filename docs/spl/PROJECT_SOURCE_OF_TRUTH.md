@@ -70,10 +70,12 @@ VariaMos manages modeling, configuration, and operation requests. Product code l
 | SPL-DEC-015 | The first target styles are static sites/frontends and monoliths or modular monoliths. | Microservices and micro-frontends remain prepared extensions, but unsupported until fully validated. |
 | SPL-DEC-016 | Every derivation first generates a validated, immutable manifest. | The manifest records configuration, bindings, artifacts, versions, integrity, builder, tests, and target before execution. |
 | SPL-DEC-017 | Deployment does not run on the server hosting VariaMos. | Each user must provide or select an authorized external target to avoid overloading and compromising the tool server. |
-| SPL-DEC-018 | VariaMos does not store secrets in the feature model, mapping, descriptor, catalog, manifest, URL, or logs. | Only an opaque reference such as `credentialRef` is used; the real credential must reside in a secure mechanism managed outside the models. |
+| SPL-DEC-018 | VariaMos does not store secrets in the feature model, mapping, descriptor, catalog, manifest, URL, build, job, target, API response, browser storage, or logs. | Private source credentials use an opaque `credentialRef`; SSH deployment passwords use an in-memory lease for one attempt and are discarded. |
 | SPL-DEC-019 | VariaMos distributes a downloadable template with real values and a descriptor validator; it does not generate the descriptor from the feature model. | Onboarding must make technical decisions explicit, explain every supported option, and avoid implying that the system infers paths or associations. |
 | SPL-DEC-020 | Publishable fields are named in English. | Canonical examples include `schemaVersion`, `project`, `artifacts`, `profiles`, `builderAdapter`, `requiredTargetCapabilities`, `repositoryUrl`, `requestedRef`, `descriptorPath`, and `credentialRef`. |
 | SPL-DEC-021 | All public terminology and every new identifier in this extension use **SPL**. | The canonical path is `.variamos/spl.json`; the language is `SPL Deployment Mapping v1`; its schema is `spl-deployment-mapping/v1`; the API uses `/api/spl/v1`; configuration, scripts, and operational resources use the `SPL` prefix. Previous DSPL values are accepted only when reading existing projects. |
+| SPL-DEC-022 | The first supported remote target is an SSH server with Docker Compose already installed. | `ssh-compose-v1` validates allowlists, the SSH host fingerprint, a restricted folder, pinned images, health checks, and rollback. Other platforms remain future adapters and are not advertised as supported. |
+| SPL-DEC-023 | SSH deployment targets authenticate only with a username and a fresh password for validation and every deploy. | The target stores the username only. Managed deployment keys, AWS/Keychain fields, and deployment credential bindings are absent from the target UI and rejected by current contracts/APIs. Private Git authentication remains separate. |
 
 ## 4. Canonical contracts and boundaries
 
@@ -121,15 +123,19 @@ The expected flow is:
 ```text
 user selects target
   -> VariaMos sends targetRef and an authorized request
-  -> orchestrator retrieves the credential through credentialRef
+  -> owner enters the SSH password for this attempt
+  -> orchestrator creates an in-memory credential lease
   -> deployer publishes outside the VariaMos server
   -> verifier checks the result
   -> VariaMos displays status and evidence; it does not host the product
 ```
 
-The concrete secret manager, first remote deployment protocol, and multi-user authorization model have not yet been agreed. Those choices remain open and must not be resolved by placing credentials in the frontend.
+The first protocol is SSH/Compose and project authorization comes from the
+existing VariaMos session/project services. Only the owner manages targets and
+deploys. Secret managers are reserved for private Git sources; they are not a
+deployment-target setting.
 
-## 5. Implementation status on 2026-07-27
+## 5. Implementation status on 2026-08-07
 
 | Capability | Status | Evidence or boundary |
 |---|---|---|
@@ -143,10 +149,10 @@ The concrete secret manager, first remote deployment protocol, and multi-user au
 | Static site with local Docker/Nginx | **Implemented and validated** | Demonstrator plus local end-to-end tests. |
 | Monolith or modular monolith | **Implemented in adapters, fixture, and local tests** | This does not equal remote deployment or universal monolith support. |
 | Descriptor template and validator | **Implemented** | `public/templates/spl.json` reproduces an executable example; the UI downloads, loads, pastes, and validates a `ready` descriptor and shows current options for each field. |
-| Credentials through `credentialRef` | **Partial** | The API prevents pasted secrets and accepts an opaque reference; selection and integration of the secure store and its lifecycle remain pending. |
+| Private-source credentials through `credentialRef` | **Implemented in broker and contracts** | Git HTTPS tokens and Git SSH keys remain outside models; provider lifecycle and log redaction are covered independently from deployment. |
 | Local non-Git provider | **Implemented** | Validates the root and descriptor, pins a digest snapshot, detects changes between preview and save, and imports through the local provider. Requires operator authorization. |
 | HTTP, package, and container-image providers | **Outside the current selector** | They remain possible architectural extensions but no longer appear as connection options. |
-| Deployment to an external server or platform | **High-priority pending work** | Current local deployment is technical evidence; it does not yet satisfy the decision that each user supplies a destination. |
+| Deployment to an SSH/Compose server | **Implemented; manual password-only rerun pending** | Target assistant, owner authorization, one-time password lease, async job, verification, cancellation and rollback are implemented and covered by automated tests. Earlier loopback E2E evidence predates the password-only UI and must be repeated before final production sign-off. |
 | Microservices and micro-frontends | **Unsupported** | The design aims for extensibility, but adapters, cases, tests, and E2E evidence are missing. |
 | MAPE-K dynamic adaptation | **Outside the committed current scope** | It must not be used to present the scope as a DSPL. |
 
@@ -176,9 +182,9 @@ The application generates and displays SPL names exclusively. When a historical 
 
 ## 7. Next work, in priority order
 
-1. Design external deployment: a user-provided target contract, first remote deployer, verification, isolation, and rollback.
-2. Select and integrate a concrete credential strategy: encrypted storage or secret manager, per-user/project authorization, rotation, revocation, and log redaction.
-3. Run and record evidence for the manual laboratory with both local Git and a real remote Git repository, in addition to the automated E2E.
+1. Repeat and record the manual loopback/external-server E2E with the final password-only target assistant.
+2. Validate production HTTPS, identity/project services, SSH/health allowlists and centralized audit output in the deployment environment.
+3. Run and record evidence for both local Git and a real remote private Git repository, including its separate credential lifecycle.
 4. Validate the flow with a more realistic project and record reproducible evidence.
 5. Run and record evidence for the manual laboratory with a local folder without Git.
 6. Evaluate HTTP, package, and container-image providers separately only if a priority use case appears.
@@ -188,11 +194,12 @@ The application generates and displays SPL names exclusively. When a historical 
 
 | ID | Open question | Closure criterion |
 |---|---|---|
-| SPL-OPEN-001 | What will be the first supported remote target: SSH/Compose, an API-based platform, a pipeline, or something else? | It must be authorized, reproducible, isolated from the VariaMos server, and feasible for the project. |
-| SPL-OPEN-002 | Which manager or mechanism will store real credentials? | It must separate secrets from models and support access control, rotation, revocation, and redaction. |
 | SPL-OPEN-005 | What level of Boolean expressiveness will the next mapping version provide? | It must be justified by real cases and preserve deterministic evaluation. |
 
-`SPL-OPEN-003` and `SPL-OPEN-004` were closed by `SPL-DEC-021`.
+`SPL-OPEN-001` is closed by `SPL-DEC-022`. `SPL-OPEN-002` is split and closed
+for the current scope by `SPL-DEC-018` and `SPL-DEC-023`: private Git uses a
+credential provider; deployment uses a non-persisted password. `SPL-OPEN-003`
+and `SPL-OPEN-004` were closed by `SPL-DEC-021`.
 
 ## 9. Recorded academic foundation
 
@@ -219,6 +226,7 @@ Canonical wording for reports and presentations:
 | 2026-07-23 | The professor requests a downloadable template, instructs the project not to commit to DSPL, and requires English fields. | SPL-DEC-002, 019, and 020. |
 | 2026-07-23 | The assisted generator is replaced with a real downloadable descriptor, an importability validator, and a visible reference of current fields and options. | Implementation of SPL-DEC-019. |
 | 2026-07-27 | The remaining terminology is closed and SPL is required for buttons, descriptor, language, API, and operational documentation. | SPL-DEC-021. |
+| 2026-08-07 | SSH/Compose is fixed as the first remote adapter and deployment authentication is simplified to a fresh username/password flow with no managed deployment-key UI or binding. | SPL-DEC-022 and 023. |
 
 ## 11. How to record a new decision
 
@@ -228,6 +236,7 @@ Add a row to the end of this table and update only the affected sections:
 |---|---|---|---|---|---|
 | SOT-001 | 2026-07-23 | This source of truth is created with 20 accepted decisions. | Consolidation requested from the professor–student conversation. | Earlier documents become context, and conflicts are resolved here. | Gustavo |
 | SOT-002 | 2026-07-23 | Implementation of `SPL-DEC-019` is recorded. | The UI, contract, and orchestrator replace the generator with a real template, field reference, and importability validator. | The draft endpoint is removed; tests cover downloads, errors, compatibility, imports, and Docker E2E. | Gustavo |
+| SOT-007 | 2026-08-07 | The first remote target and its password-only authentication boundary are recorded. | Production preparation required removing managed deployment-key and Mac-specific target configuration. | Target contracts, adapter metadata, UI, runtime checks, tests and operations documentation now agree. | Gustavo |
 | SOT-003 | 2026-07-25 | An explicit project-source selector is recorded. | Remote and local Git needed to be distinguished while making planned evolution visible without confusing a roadmap with support. | The UI changes its form by source; the orchestrator publishes availability; four future providers were marked `development`. | Gustavo |
 | SOT-004 | 2026-07-27 | The selector is limited to remote Git, local Git, and local folder without Git; the third source becomes operational through digest snapshots. | The interface was intentionally focused on the three relevant connection methods and removed future options with no immediate use. | HTTP, package, and OCI options are removed from the visible catalog; validation, persistence, import, and tests are added for the local non-Git provider. | Gustavo |
 | SOT-005 | 2026-07-27 | The public DSPL-to-SPL migration is completed. | The professor limited the academic commitment to an SPL and requested the removal of DSPL from current names. | `.variamos/spl.json`, `SPL Deployment Mapping v1`, `spl-deployment-mapping/v1`, `/api/spl/v1`, variables, and the SPL UI become canonical; previous names remain read-compatible only. | Gustavo |
