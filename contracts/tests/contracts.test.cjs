@@ -98,3 +98,120 @@ test("variamos-project/v1 blocks traversal, secrets, and imported drafts", () =>
   assert.equal(secret.valid, false);
   assert.match(draft.errors.join("\n"), /'ready' status/);
 });
+
+test("password-only remote targets reject stored credentials, secrets, and mutable images", () => {
+  const ajv = createValidator();
+  const timestamp = "2026-08-03T12:00:00.000Z";
+  const credential = {
+    schemaVersion: "credential-binding/v1",
+    id: "source-private",
+    ref: "secret://projects/project-123/source-private",
+    projectId: "project-123",
+    alias: "Private Git source",
+    provider: "aws-secrets-manager",
+    purpose: "source-read",
+    credentialType: "git-ssh-key-v1",
+    externalSecretId: "arn:aws:secretsmanager:us-east-1:123456789012:secret:variamos-prod",
+    subject: { kind: "source-connection", id: "private-source" },
+    activeVersionId: "version-1",
+    status: "active",
+    createdAt: timestamp,
+    createdBy: "owner-1",
+  };
+  const target = {
+    schemaVersion: "deployment-target-connection/v1",
+    id: "production-web",
+    projectId: "project-123",
+    name: "Production web",
+    environment: "production",
+    adapter: "ssh-compose-v1",
+    endpoint: {
+      host: "deploy.example.org",
+      port: 22,
+      sshHostKeyFingerprint: `SHA256:${"A".repeat(43)}`,
+    },
+    remoteBasePath: "/srv/variamos/project-123",
+    publishedPort: 8080,
+    publicBaseUrl: "https://product.example.org/",
+    images: {
+      nginx: `nginx@sha256:${"a".repeat(64)}`,
+      node: `node@sha256:${"b".repeat(64)}`,
+    },
+    capabilities: ["docker", "static-http", "single-container"],
+    authentication: { mode: "prompt-password", username: "deployer" },
+    status: "active",
+    revision: 1,
+    createdAt: timestamp,
+    createdBy: "owner-1",
+    updatedAt: timestamp,
+    updatedBy: "owner-1",
+  };
+
+  assert.equal(validateDocument(ajv, "credentialBinding", credential).valid, true);
+  assert.equal(validateDocument(ajv, "credentialBinding", {
+    ...credential,
+    purpose: "deployment",
+    credentialType: "ssh-deployment-v1",
+    subject: { kind: "deployment-target", id: "production-web" },
+  }).valid, false);
+  assert.equal(
+    validateDocument(ajv, "credentialBinding", {
+      ...credential,
+      provider: "macos-keychain",
+      externalSecretId:
+        "keychain://variamos-spl-local/project-123/source-read/git-ssh-key-v1/private-source-key",
+    }).valid,
+    true
+  );
+  assert.equal(
+    validateDocument(ajv, "credentialBinding", {
+      ...credential,
+      provider: "plaintext-file",
+    }).valid,
+    false
+  );
+  assert.equal(validateDocument(ajv, "targetConnection", target).valid, true);
+  const targetWithoutEnvironment = { ...target };
+  delete targetWithoutEnvironment.environment;
+  assert.equal(validateDocument(ajv, "targetConnection", targetWithoutEnvironment).valid, true);
+  const staticTargetWithoutUnusedNodeImage = {
+    ...targetWithoutEnvironment,
+    images: { nginx: target.images.nginx },
+  };
+  assert.equal(validateDocument(ajv, "targetConnection", staticTargetWithoutUnusedNodeImage).valid, true);
+  const passwordTarget = { ...staticTargetWithoutUnusedNodeImage };
+  assert.equal(validateDocument(ajv, "targetConnection", passwordTarget).valid, true);
+  assert.equal(validateDocument(ajv, "targetConnection", {
+    ...passwordTarget,
+    authentication: { mode: "prompt-pem", username: "deployer" },
+  }).valid, true);
+  assert.equal(validateDocument(ajv, "targetConnection", {
+    ...passwordTarget,
+    password: "must-never-be-persisted",
+  }).valid, false);
+  assert.equal(validateDocument(ajv, "targetConnection", {
+    ...passwordTarget,
+    deploymentCredentialRef: credential.ref,
+  }).valid, false);
+  assert.equal(validateDocument(ajv, "targetConnection", {
+    ...passwordTarget,
+    authentication: { mode: "stored-key" },
+  }).valid, false);
+  const passwordTargetWithoutUser = { ...passwordTarget, authentication: { mode: "prompt-password" } };
+  assert.equal(validateDocument(ajv, "targetConnection", passwordTargetWithoutUser).valid, false);
+  const nodeTargetWithoutNodeImage = {
+    ...targetWithoutEnvironment,
+    capabilities: ["docker", "node-runtime", "single-container"],
+    images: { nginx: target.images.nginx },
+  };
+  assert.equal(validateDocument(ajv, "targetConnection", nodeTargetWithoutNodeImage).valid, false);
+
+  const secretBearing = { ...credential, token: "must-never-be-here" };
+  assert.equal(validateDocument(ajv, "credentialBinding", secretBearing).valid, false);
+
+  const mutableImage = {
+    ...target,
+    images: { ...target.images, nginx: "nginx:latest" },
+  };
+  assert.equal(validateDocument(ajv, "targetConnection", mutableImage).valid, false);
+});

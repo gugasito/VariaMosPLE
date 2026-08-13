@@ -7,10 +7,29 @@ const http = require("node:http");
 const os = require("node:os");
 const path = require("node:path");
 
-const { createSplHttpHandler } = require("../../services/spl-orchestrator/dist/SplHttpServer.js");
+const { createSplHttpHandler } = require("../../server/dist/spl/SplHttpServer.js");
 const workspaceRoot = path.resolve(__dirname, "../..");
 const templateRoot = path.join(workspaceRoot, "examples/external-project-onboarding");
 const featureModelPath = path.join(workspaceRoot, "contracts/examples/event-portal/models/feature-model.json");
+const projectId = "external-event-project";
+
+const TEST_OWNER_AUTHORIZER = {
+  async authorize(_request, requestedProjectId) {
+    return {
+      userId: "external-e2e-owner",
+      role: "owner",
+      projectId: requestedProjectId,
+      token: "external-e2e-token",
+    };
+  },
+  async reauthorize(actor, requestedProjectId) {
+    return {
+      ...actor,
+      role: "owner",
+      projectId: requestedProjectId,
+    };
+  },
+};
 
 function availablePort() {
   return new Promise((resolve, reject) => {
@@ -120,6 +139,7 @@ function mappingFor(featureModel, profile) {
     allowLocalGitRepositories: true,
     resourceRegistryPath: registryPath,
     allowedOrigins: ["http://127.0.0.1:3000"],
+    authorizer: TEST_OWNER_AUTHORIZER,
   }));
   let manifestId;
   try {
@@ -130,6 +150,7 @@ function mappingFor(featureModel, profile) {
     const apiPort = server.address().port;
     const base = `http://127.0.0.1:${apiPort}`;
     const connectionInput = {
+      projectId,
       id: "external-event-portal", provider: "git", repositoryUrl: repositoryPath,
       requestedRef: "main", descriptorPath: ".variamos/spl.json",
     };
@@ -140,6 +161,7 @@ function mappingFor(featureModel, profile) {
       expectedDescriptorDigest: preview.connection.descriptorDigest,
     });
     const profile = await request(base, "/api/spl/v1/imports", {
+      projectId,
       connectionId: connectionInput.id,
       profileId: "external-event-portal.static",
       targetRef: "variamos.target.docker.static.local",
@@ -147,7 +169,7 @@ function mappingFor(featureModel, profile) {
     const featureModel = JSON.parse(fs.readFileSync(featureModelPath, "utf8"));
     const mappingModel = mappingFor(featureModel, profile);
     const derivation = async (action, expectedPlanDigest) => request(base, "/api/spl/v1/derivations", {
-      action, projectId: "external-event-project", productLineId: "external-event-portal",
+      action, projectId, productLineId: "external-event-portal",
       featureModel, mappingModel, expectedPlanDigest,
     });
     const plan = await derivation("plan");

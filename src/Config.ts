@@ -27,8 +27,6 @@ export const Config = {
       gatewayUrl("/variamos_ms_languages"),
     urlBackEndProjectPersistence:
       process.env.REACT_APP_URLVMSPROJECTS || gatewayUrl("/vms_projects"),
-    urlSplOrchestrator:
-      process.env.REACT_APP_SPL_ORCHESTRATOR_URL || "http://127.0.0.1:8090",
     urlBackEndRestriction: process.env.REACT_APP_URLBACKENDRESTRICTION,
     urlVariamosDocumentation: process.env.REACT_APP_URLVARIAMOSDOCUMENTATION,
     urlVariamosLanguages: process.env.REACT_APP_URLVARIAMOSLANGUAGES,

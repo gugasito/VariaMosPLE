@@ -28,6 +28,14 @@ const schemaDefinitions = {
     id: "https://variamosple.org/schemas/spl/target/v1",
     file: "target.schema.json",
   },
+  targetConnection: {
+    id: "https://variamosple.org/schemas/spl/deployment-target-connection/v1",
+    file: "deployment-target-connection.schema.json",
+  },
+  credentialBinding: {
+    id: "https://variamosple.org/schemas/spl/credential-binding/v1",
+    file: "credential-binding.schema.json",
+  },
   manifest: {
     id: "https://variamosple.org/schemas/spl/manifest/v1",
     file: "manifest.schema.json",

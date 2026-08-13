@@ -32,3 +32,12 @@ export const PROJECTS_CLIENT = axios.create({
 });
 
 PROJECTS_CLIENT.interceptors.request.use(authInterceptor);
+
+/** SPL is served by this same VariaMosPLE origin. */
+export const SPL_CLIENT = axios.create({
+  baseURL: "/api/spl/v1",
+  timeout: 30000,
+  withCredentials: true,
+});
+
+SPL_CLIENT.interceptors.request.use(authInterceptor);

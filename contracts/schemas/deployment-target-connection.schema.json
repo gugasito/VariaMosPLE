@@ -1,0 +1,168 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://variamosple.org/schemas/spl/deployment-target-connection/v1",
+  "title": "Project-scoped remote deployment target",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "id",
+    "projectId",
+    "name",
+    "adapter",
+    "endpoint",
+    "remoteBasePath",
+    "publishedPort",
+    "publicBaseUrl",
+    "images",
+    "capabilities",
+    "authentication",
+    "status",
+    "revision",
+    "createdAt",
+    "createdBy",
+    "updatedAt",
+    "updatedBy"
+  ],
+  "properties": {
+    "schemaVersion": { "const": "deployment-target-connection/v1" },
+    "id": { "$ref": "#/$defs/stableId" },
+    "projectId": { "$ref": "#/$defs/stableId" },
+    "name": { "type": "string", "minLength": 1, "maxLength": 160 },
+    "environment": { "enum": ["development", "staging", "production"] },
+    "adapter": { "const": "ssh-compose-v1" },
+    "endpoint": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["host", "port", "sshHostKeyFingerprint"],
+      "properties": {
+        "host": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 253,
+          "pattern": "^[A-Za-z0-9.-]+$"
+        },
+        "port": { "type": "integer", "minimum": 1, "maximum": 65535 },
+        "sshHostKeyFingerprint": {
+          "type": "string",
+          "pattern": "^SHA256:[A-Za-z0-9+/]{43}=?$"
+        }
+      }
+    },
+    "remoteBasePath": {
+      "type": "string",
+      "minLength": 2,
+      "maxLength": 512,
+      "pattern": "^/[A-Za-z0-9._/ -]+$"
+    },
+    "publishedPort": { "type": "integer", "minimum": 1024, "maximum": 65535 },
+    "publicBaseUrl": {
+      "type": "string",
+      "minLength": 10,
+      "maxLength": 2048,
+      "pattern": "^https?://[^\\s/@]+(?::[0-9]+)?(?:/[^\\s]*)?$"
+    },
+    "images": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "nginx": { "$ref": "#/$defs/digestImage" },
+        "node": { "$ref": "#/$defs/digestImage" }
+      }
+    },
+    "capabilities": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": { "$ref": "#/$defs/stableId" }
+    },
+    "authentication": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["mode", "username"],
+      "properties": {
+        "mode": { "enum": ["prompt-password", "prompt-pem"] },
+        "username": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256,
+          "pattern": "^[^\\u0000-\\u001f\\u007f]+$"
+        }
+      }
+    },
+    "status": { "enum": ["pending", "active", "disabled"] },
+    "revision": { "type": "integer", "minimum": 1 },
+    "createdAt": { "$ref": "#/$defs/timestamp" },
+    "createdBy": { "type": "string", "minLength": 1, "maxLength": 256 },
+    "updatedAt": { "$ref": "#/$defs/timestamp" },
+    "updatedBy": { "type": "string", "minLength": 1, "maxLength": 256 },
+    "validatedAt": { "$ref": "#/$defs/timestamp" },
+    "validatedBy": { "type": "string", "minLength": 1, "maxLength": 256 },
+    "disabledAt": { "$ref": "#/$defs/timestamp" },
+    "disabledBy": { "type": "string", "minLength": 1, "maxLength": 256 }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "capabilities": {
+            "type": "array",
+            "contains": { "const": "static-http" }
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "images": {
+            "type": "object",
+            "required": ["nginx"],
+            "properties": { "nginx": {} }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "capabilities": {
+            "type": "array",
+            "contains": { "enum": ["node-runtime", "http-api"] }
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "images": {
+            "type": "object",
+            "required": ["node"],
+            "properties": { "node": {} }
+          }
+        }
+      }
+    }
+  ],
+  "$defs": {
+    "stableId": {
+      "type": "string",
+      "pattern": "^[a-z0-9]+(?:[._-][a-z0-9]+)*$",
+      "minLength": 3,
+      "maxLength": 120
+    },
+    "secretRef": {
+      "type": "string",
+      "pattern": "^secret://projects/[a-z0-9]+(?:[._-][a-z0-9]+)*/[a-z0-9]+(?:[._-][a-z0-9]+)*$",
+      "minLength": 20,
+      "maxLength": 512
+    },
+    "digestImage": {
+      "type": "string",
+      "minLength": 75,
+      "maxLength": 512,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._/:@-]*@sha256:[a-f0-9]{64}$"
+    },
+    "timestamp": {
+      "type": "string",
+      "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(?:\\.[0-9]{3})?Z$"
+    }
+  }
+}

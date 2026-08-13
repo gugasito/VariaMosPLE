@@ -1,0 +1,7 @@
+allowBuilds:
+  core-js: set this to true or false
+  core-js-pure: set this to true or false
+  cpu-features: set this to true or false
+  cypress: set this to true or false
+  leveldown: set this to true or false
+  ssh2: set this to true or false

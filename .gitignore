@@ -11,7 +11,9 @@ node_modules/
 
 # production
 /build
+/server/dist
 /services/spl-orchestrator/dist
+/.runtime/
 
 # misc
 .DS_Store
